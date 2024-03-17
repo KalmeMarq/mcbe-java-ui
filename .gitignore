@@ -1,0 +1,4 @@
+assets/**/*.png
+ui
+manifest.json
+textures_list.json

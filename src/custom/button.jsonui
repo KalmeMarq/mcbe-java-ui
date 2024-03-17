@@ -1,0 +1,49 @@
+{
+  namespace = "kmjava:button",
+
+  button@common.button = {
+    size = [200, 10],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    $button_text|default = "",
+    controls = [
+      { default@kmjava:button.button_state = {} },
+      { hover@kmjava:button.button_state = {} },
+      { pressed@kmjava:button.button_state = {} }
+    ]
+  },
+
+  button_state = {
+    type = "panel",
+    controls = [
+      {
+        left = {
+          type = "image",
+          texture = "assets/minecraft/textures/gui/widgets",
+          size = [100, 20],
+          uv = [0, 66],
+          uv_size = [100, 20],
+          anchor_from = "top_left",
+          anchor_to = "top_left"
+        }
+      },
+      {
+        right = {
+          type = "image",
+          texture = "assets/minecraft/textures/gui/widgets",
+          size = [100, 20],
+          uv = [100, 66],
+          uv_size = [100, 20],
+          anchor_from = "top_right",
+          anchor_to = "top_right"
+        }
+      },
+      {
+        label = {
+          type = "label",
+          text = "$button_text"
+        }
+      }
+    ]
+  }
+}
