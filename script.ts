@@ -228,7 +228,7 @@ function processFile(global_defines: DefineContext, content: string) {
         .join(' ');
       const v = evalJsep(jsep(defName), (name: string) => evalDirectiveExpr(localDefineContext, name));
       ifConds.push(Boolean(v) == true);
-    } else if (trimmedLine.startsWith('//#elseif') && trimmedLine.split(' ').length >= 2) {
+    } else if (trimmedLine.startsWith('//#elif') && trimmedLine.split(' ').length >= 2) {
       const defName = line
         .trimStart()
         .split(' ')
