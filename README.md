@@ -46,6 +46,14 @@ I also use a custom format .jsonui. It's similar to json but I don't use comment
 ```
 
 ```
+#for <start> to <end> step <step>
+```
+
+```
+#endfor
+```
+
+```
 #info <message>
 #warn <message>
 #error <message>

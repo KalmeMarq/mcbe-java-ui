@@ -146,7 +146,15 @@ function evalJsep(expr: any, context: any): any {
         return left && right;
     }
   } else if (expr.type == 'UnaryExpression') {
-    return !evalJsep(expr.argument, context);
+    if (expr.operator == '+') {
+      return +evalJsep(expr.argument, context);
+    }
+    if (expr.operator == '-') {
+      return -evalJsep(expr.argument, context);
+    }
+    if (expr.operator == '!') {
+      return !evalJsep(expr.argument, context);
+    }
   } else if (expr.type == 'CallExpression') {
     if (expr.callee.name == 'defined') {
       return context('CONTEXT').has(expr.arguments[0].name);
@@ -182,8 +190,16 @@ function processFile(global_defines: DefineContext, content: string) {
 
   let isExcluding = false;
 
-  let i = 0;
-  for (const line of content.split('\n')) {
+  let isLooping = false;
+  let loopLine = 0;
+  let loopStart = 0;
+  let loopEnd = 0;
+  let loopStep = 0;
+  let loopIdx = 0;
+
+  const lines = content.split('\n');
+  for (let lineIdx = 0; lineIdx < lines.length; ++lineIdx) {
+    const line = lines[lineIdx];
     const trimmedLine = line.trimStart();
 
     if (trimmedLine.startsWith('//#define') && trimmedLine.split(' ').length >= 2) {
@@ -219,6 +235,24 @@ function processFile(global_defines: DefineContext, content: string) {
       ifConds.push(!localDefineContext.has(defName));
     } else if (trimmedLine.startsWith('//#endif')) {
       ifConds.pop();
+    } else if (trimmedLine.startsWith('//#for ')) {
+      const n = /(?<start>[()a-z=<> _0-9!-*\/-]+)\s*to\s*(?<end>[()a-z=<> _0-9!-*\/-]+)\s*step\s*(?<step>[()a-z=<> _0-9!*\/-]+)/gm.exec(trimmedLine.split(' ').slice(1).join(' '));
+      const start = evalJsep(jsep(n!.groups!['start']), (n: string) => evalDirectiveExpr(localDefineContext, n));
+      const end = evalJsep(jsep(n!.groups!['end']), (n: string) => evalDirectiveExpr(localDefineContext, n));
+      const step = evalJsep(jsep(n!.groups!['step']), (n: string) => evalDirectiveExpr(localDefineContext, n));
+      isLooping = true;
+      loopStart = start;
+      loopEnd = end;
+      loopStep = step;
+      loopIdx = start;
+      loopLine = lineIdx;
+    } else if (trimmedLine.startsWith('//#endfor')) {
+      loopIdx += loopStep;
+      if (loopIdx < loopEnd) {
+        lineIdx = loopLine;
+      } else {
+        isLooping = false;
+      }
     } else if (trimmedLine.startsWith('//#if') && trimmedLine.split(' ').length >= 2) {
       const defName = line
         .trimStart()
@@ -239,21 +273,27 @@ function processFile(global_defines: DefineContext, content: string) {
       ifConds[ifConds.length - 1] = Boolean(v) == true;
     } else if (trimmedLine.startsWith('//#else')) {
       ifConds[ifConds.length - 1] = !ifConds[ifConds.length - 1];
+    } else if (trimmedLine.startsWith('//#include ')) {
+      throw new Error('#include not implemented');
     } else if (trimmedLine.startsWith('//#exclude')) {
       isExcluding = true;
     } else if (trimmedLine.startsWith('//#endexclude')) {
       isExcluding = false;
     } else if (trimmedLine.startsWith('//#warn') && trimmedLine.split(' ').length >= 2) {
-      console.log('%cWARN (ln ' + (i + 1) + '): ' + trimmedLine.split(' ')[1].trim(), 'color: yellow;');
+      console.log('%cWARN (ln ' + (lineIdx + 1) + '): ' + trimmedLine.split(' ')[1].trim(), 'color: yellow;');
     } else if (trimmedLine.startsWith('//#error') && trimmedLine.split(' ').length >= 2) {
-      console.log('%cERROR (ln ' + (i + 1) + '): ' + trimmedLine.split(' ')[1].trim(), 'color: red;');
+      console.log('%cERROR (ln ' + (lineIdx + 1) + '): ' + trimmedLine.split(' ')[1].trim(), 'color: red;');
     } else if (trimmedLine.startsWith('//#info') && trimmedLine.split(' ').length >= 2) {
-      console.log('%cINFO (ln ' + (i + 1) + '): ' + trimmedLine.split(' ')[1].trim(), 'color: green;');
+      console.log('%cINFO (ln ' + (lineIdx + 1) + '): ' + trimmedLine.split(' ')[1].trim(), 'color: green;');
     } else {
-      if (!isExcluding && testIf()) output.push(line);
+      if (!isExcluding && testIf())
+        output.push(
+          line.replace(/\b\w+\b/gm, (a) => {
+            if (a == '__IDX0__') return loopIdx + '';
+            return a;
+          })
+        );
     }
-
-    ++i;
   }
 
   const outputText = output.join('\n');
@@ -417,6 +457,22 @@ async function main() {
 
   console.log('Proccessing files...');
   for (const pattern of packConfig.ui.patterns) {
+    {
+      Deno.stdout.writeSync(new TextEncoder().encode('Clear "' + path.resolve(pattern['output']) + '"? '));
+      const buffer = new Uint8Array(64);
+      const len = Deno.stdin.readSync(buffer) ?? 0;
+      const ms = new TextDecoder().decode(buffer.subarray(0, len)).trim();
+
+      if (ms.toLowerCase() == 'y') {
+        try {
+          Deno.statSync(path.resolve(pattern['output']));
+          Deno.removeSync(path.resolve(pattern['output']), { recursive: true });
+        } catch (e) {}
+      }
+    }
+  }
+
+  for (const pattern of packConfig.ui.patterns) {
     const inputStat = Deno.statSync(pattern['input']);
     if (inputStat.isFile) {
       const content = Deno.readTextFileSync(pattern['input']);
@@ -432,7 +488,16 @@ async function main() {
         const fStat = Deno.statSync(pattern['input'] + '/' + fileItem.name);
         if (!fStat.isFile) continue;
         const p = pattern['input'] + '/' + fileItem.name;
-        const content = Deno.readTextFileSync(p);
+        let content = Deno.readTextFileSync(p);
+
+        if (content.startsWith('#!c') || content.startsWith('//#!c')) {
+          content = (fileItem.name.endsWith('.jsonui') ? translateToJson : translateToJsonUI)(content.substring(content.indexOf('\n'))).trimStart();
+          Deno.writeTextFileSync(
+            pattern['input'] + '/' + fileItem.name.replace(fileItem.name.endsWith('.jsonui') ? '.jsonui' : '.json', !fileItem.name.endsWith('.jsonui') ? '.jsonui' : '.json'),
+            content
+          );
+        }
+
         const timeStart = performance.now();
         const output = processFile(globalDefineContext, p.endsWith('.jsonui') ? translateToJson(content) : content);
         const timeEnd = performance.now();

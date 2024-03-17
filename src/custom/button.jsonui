@@ -2,7 +2,7 @@
   namespace = "kmjava:button",
 
   button@common.button = {
-    size = [200, 10],
+    size = [200, 20],
     anchor_from = "top_left",
     anchor_to = "top_left",
     $button_text|default = "",
