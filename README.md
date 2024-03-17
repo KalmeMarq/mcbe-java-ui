@@ -55,7 +55,7 @@ I also use a custom format .jsonui. It's similar to json but I don't use comment
 
 ### .json
 
-```json
+```jsonc
   //#if defined(DEBUG)
   },
   {
