@@ -1,6 +1,9 @@
 {
   "deno.enable": true,
   "deno.lint": false,
+  "files.associations": {
+    "*.jsonuii": "jsonui"
+  },
   "json.schemas": [
     {
       "url": "https://kalmemarq.github.io/Bugrock-JSON-UI-Schemas/ui.schema.json",

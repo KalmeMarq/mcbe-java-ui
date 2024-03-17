@@ -1,70 +1,13 @@
 {
-  "start_screen_content": {
-    "type": "panel",
-    "$achievements_ignored|default": false,
-    "$feedback_ignored|default": false,
-    "$store_ignored|default": false,
-    "variables": [
+  "start_screen@common.base_screen": {
+    "button_mappings": [
       {
-        "requires": "$education_edition",
-        "$achievements_ignored": true,
-        "$store_ignored|default": true
-      },
-      {
-        "requires": "$gear_vr",
-        "$feedback_ignored": true
-      },
-      {
-        "requires": "$apple_tv",
-        "$feedback_ignored": true
-      },
-      {
-        "requires": "$fire_tv",
-        "$feedback_ignored": true
+        "ignored": "(not $can_quit)",
+        "from_button_id": "button.menu_cancel",
+        "to_button_id": "button.menu_exit",
+        "mapping_type": "global"
       }
     ],
-    "controls": [
-      {
-        "title_panel_content@common_art.title_panel_content": { }
-      },
-      {
-        "skin_panel@start.skin_panel": { "layer": 1 }
-      },
-      {
-        "gamepad_helpers@start.gamepad_helpers": { }
-      },
-      {
-        "main_buttons_panel@start.main_buttons_panel": { }
-      },
-      {
-        "online_buttons_panel@start.online_buttons_panel": { }
-      },
-      {
-        "text_panel@start.text_panel": { }
-      },
-      {
-        "realms_pending_invite_panel@start.realms_pending_invite_panel": {
-          "anchor_from": "top_left",
-          "anchor_to": "top_left"
-        }
-      //#ifdef DEBUG
-      },
-      {
-        "a": {
-          "type": "label",
-          "text": "Hey Bruv",
-          "anchor_from": "top_left",
-          "anchor_to": "top_left",
-          "offset": [10, 20],
-          "color": "black"
-        }
-      },
-      {
-        "b@kmjava:button.button": {
-          "$button_text": "bruv"
-        }
-      //#endif
-      }
-    ]
+    "$screen_content": "kmjava:title.title_screen"
   }
 }

@@ -28,6 +28,7 @@ export interface PackConfig {
     uuid: string;
     mdule_uuid: string;
   };
+  resolveInclude?: string;
   target: MCPE_Version;
   defines?: [string | [string, string]];
 }
@@ -169,10 +170,25 @@ function evalJsep(expr: any, context: any): any {
   throw new Error('Unknown ' + expr.type);
 }
 
-function processFile(global_defines: DefineContext, content: string) {
+let resolveInclude = 'NAN';
+
+function loadInclude(context: DefineContext, filePath: string) {
+  if (filePath == 'std') {
+    processFile(
+      context,
+      `
+    `,
+      true
+    );
+  } else if (resolveInclude != 'NAN') {
+    processFile(context, Deno.readTextFileSync(resolveInclude + '/' + filePath + '.jsonuii').replace(/#/gm, '//#'), true);
+  }
+}
+
+function processFile(global_defines: DefineContext, content: string, isInner = false) {
   let output: string[] = [];
 
-  const localDefineContext = new DefineContext(global_defines);
+  const localDefineContext = isInner ? global_defines : new DefineContext(global_defines);
   const ifConds: boolean[] = [];
 
   const testIf = () => {
@@ -274,7 +290,8 @@ function processFile(global_defines: DefineContext, content: string) {
     } else if (trimmedLine.startsWith('//#else')) {
       ifConds[ifConds.length - 1] = !ifConds[ifConds.length - 1];
     } else if (trimmedLine.startsWith('//#include ')) {
-      throw new Error('#include not implemented');
+      const m = trimmedLine.split(' ').slice(1).join(' ');
+      loadInclude(localDefineContext, m.substring(1, m.length - 1));
     } else if (trimmedLine.startsWith('//#exclude')) {
       isExcluding = true;
     } else if (trimmedLine.startsWith('//#endexclude')) {
@@ -393,6 +410,10 @@ async function main() {
 
   const packConfig = (await import('./pack.config.ts')).default;
   console.log('Config loaded!');
+
+  if (packConfig.resolveInclude) {
+    resolveInclude = packConfig.resolveInclude;
+  }
 
   function parseManifestJson(version: string) {
     const r = /(?<major>\d+)(\.(?<minor>\d+)(\.(?<patch>\d+))?)?/gm.exec(version);

@@ -18,6 +18,7 @@ const config: PackConfig = {
       patterns: ['assets']
     }
   },
+  resolveInclude: 'src/include',
   manifest: {
     name: 'Java UI - KM',
     description: 'Created by KalmeMarq',
