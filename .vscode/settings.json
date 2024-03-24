@@ -13,7 +13,8 @@
         "src/**/*.json",
         "!_global_variables.json",
         "!_ui_defs.json",
-        "!manifest.json"
+        "!manifest.json",
+        "!pack_manifest.json"
       ]
     },
     {

@@ -21,7 +21,7 @@ export interface PackConfig {
       extra?: string[];
     };
   };
-  manifest: {
+  manifest?: {
     name: string;
     description?: string;
     version: `${number}` | `${number}.${number}` | `${number}.${number}.${number}` | [number, number, number];
@@ -50,12 +50,26 @@ class DefineContext {
     if (this.#map.has(name)) {
       return this.#map.get(name)!;
     }
-    return this.#parent?.get(name)!;
+
+    if (this.#parent?.has(name)) return this.#parent?.get(name)!;
+
+    const mcpe_v = testForMCPEVersion(name);
+    if (mcpe_v != null) {
+      this.#map.set(name, { kind: 'constant', name, value: genMCPEVersionDefineValue(mcpe_v) });
+    }
+
+    return this.#map.get(name)!;
   }
 
   has(name: string): boolean {
     let has = this.#map.has(name);
     if (!has && this.#parent) has = this.#parent.has(name);
+
+    const mcpe_v = testForMCPEVersion(name);
+    if (mcpe_v != null) {
+      this.#map.set(name, { kind: 'constant', name, value: genMCPEVersionDefineValue(mcpe_v) });
+    }
+
     return has;
   }
 
@@ -112,6 +126,7 @@ function evalDirectiveExpr(context: DefineContext, name: string) {
   if (name == 'CONTEXT') {
     return context;
   }
+  context.get(name);
   return context.has(name) ? (context.get(name) as any).value : 0;
 }
 
@@ -276,6 +291,7 @@ function processFile(global_defines: DefineContext, content: string, isInner = f
         .slice(1)
         .map((it) => it.trim())
         .join(' ');
+
       const v = evalJsep(jsep(defName), (name: string) => evalDirectiveExpr(localDefineContext, name));
       ifConds.push(Boolean(v) == true);
     } else if (trimmedLine.startsWith('//#elif') && trimmedLine.split(' ').length >= 2) {
@@ -410,6 +426,7 @@ async function main() {
 
   const packConfig = (await import('./pack.config.ts')).default;
   console.log('Config loaded!');
+  globalDefineContext.add('MCPE_CURRENT', { kind: 'constant', name: 'MCPE_CURRENT', value: genMCPEVersionDefineValue(testForMCPEVersion(packConfig.target)!) });
 
   if (packConfig.resolveInclude) {
     resolveInclude = packConfig.resolveInclude;
@@ -451,40 +468,43 @@ async function main() {
     Deno.writeTextFileSync('textures/textures_list.json', JSON.stringify(list, null, 2));
   }
 
-  Deno.writeTextFileSync(
-    'manifest.json',
-    JSON.stringify(
-      {
-        format_version: 1,
-        header: {
-          uuid: packConfig.manifest.uuid,
-          name: packConfig.manifest.name,
-          version: typeof packConfig.manifest.version === 'string' ? parseManifestJson(packConfig.manifest.version) : packConfig.manifest.version,
-          description: packConfig.manifest.description ?? ''
-        },
-        modules: [
-          {
+  const hasYes = Deno.args.indexOf('-y') >= 0;
+
+  if (packConfig.manifest)
+    Deno.writeTextFileSync(
+      'manifest.json',
+      JSON.stringify(
+        {
+          format_version: 1,
+          header: {
+            uuid: packConfig.manifest.uuid,
+            name: packConfig.manifest.name,
             version: typeof packConfig.manifest.version === 'string' ? parseManifestJson(packConfig.manifest.version) : packConfig.manifest.version,
-            description: packConfig.manifest.description ?? '',
-            uuid: packConfig.manifest.mdule_uuid,
-            type: 'resources'
-          }
-        ]
-      },
-      null,
-      2
-    )
-  );
+            description: packConfig.manifest.description ?? ''
+          },
+          modules: [
+            {
+              version: typeof packConfig.manifest.version === 'string' ? parseManifestJson(packConfig.manifest.version) : packConfig.manifest.version,
+              description: packConfig.manifest.description ?? '',
+              uuid: packConfig.manifest.mdule_uuid,
+              type: 'resources'
+            }
+          ]
+        },
+        null,
+        2
+      )
+    );
 
   console.log('Proccessing files...');
   for (const pattern of packConfig.ui.patterns) {
     {
-      Deno.stdout.writeSync(new TextEncoder().encode('Clear "' + path.resolve(pattern['output']) + '"? '));
+      if (!hasYes) Deno.stdout.writeSync(new TextEncoder().encode('Clear "' + path.resolve(pattern['output']) + '"? '));
       const buffer = new Uint8Array(64);
-      const len = Deno.stdin.readSync(buffer) ?? 0;
+      const len = !hasYes ? Deno.stdin.readSync(buffer) ?? 0 : 0;
       const ms = new TextDecoder().decode(buffer.subarray(0, len)).trim();
 
-      if (ms.toLowerCase() == 'y') {
+      if (!hasYes || ms.toLowerCase() == 'y') {
         try {
           Deno.statSync(path.resolve(pattern['output']));
           Deno.removeSync(path.resolve(pattern['output']), { recursive: true });

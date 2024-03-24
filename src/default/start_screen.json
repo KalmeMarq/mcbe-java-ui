@@ -1,13 +1,47 @@
 {
+  "namespace": "start",
+
   "start_screen@common.base_screen": {
     "button_mappings": [
+//#if MCPE_CURRENT > MCPE_1_0
       {
         "ignored": "(not $can_quit)",
         "from_button_id": "button.menu_cancel",
         "to_button_id": "button.menu_exit",
         "mapping_type": "global"
+      },
+//#else
+      {
+        "from_button_id": "button.menu_cancel",
+        "to_button_id": "button.menu_exit",
+        "mapping_type": "global"
+      },
+      {
+        "from_button_id": "button.menu_up",
+        "to_button_id": "button.menu_up",
+        "mapping_type": "global",
+        "scope": "view"
+      },
+      {
+        "from_button_id": "button.menu_down",
+        "to_button_id": "button.menu_down",
+        "mapping_type": "global",
+        "scope": "view"
+      },
+      {
+        "from_button_id": "button.menu_left",
+        "to_button_id": "button.menu_left",
+        "mapping_type": "global",
+        "scope": "view"
+      },
+      {
+        "from_button_id": "button.menu_right",
+        "to_button_id": "button.menu_right",
+        "mapping_type": "global",
+        "scope": "view"
       }
+//#endif
     ],
-    "$screen_content": "kmjava:title.title_screen"
+    "$screen_content": "kmjava_title.title_screen"
   }
 }

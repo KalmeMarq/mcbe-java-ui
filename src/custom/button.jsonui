@@ -1,5 +1,5 @@
 {
-  namespace = "kmjava:button",
+  namespace = "kmjava_button",
 
   button@common.button = {
     size = [200, 20],
@@ -8,18 +8,18 @@
     $button_text|default = "",
     controls = [
       {
-        default@kmjava:button.button_state = {
+        default@kmjava_button.button_state = {
           $button_txr_uv = [0, 66]
         }
       },
       {
-        hover@kmjava:button.button_state = {
+        hover@kmjava_button.button_state = {
           $button_txr_uv = [0, 86],
           $button_text_color = [1, 1, 0.2509]
         }
       },
       {
-        pressed@kmjava:button.button_state = {
+        pressed@kmjava_button.button_state = {
           $button_txr_uv = [0, 86],
           $button_text_color = [1, 1, 0.2509]
         }

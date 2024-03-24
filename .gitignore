@@ -1,4 +1,5 @@
 assets/**/*.png
 ui
 manifest.json
+pack_manifest.json
 textures_list.json

@@ -77,7 +77,7 @@ I also use a custom format .jsonui. It's similar to json but I don't use comment
     }
   },
   {
-    "b@kmjava:button.button": {
+    "b@kmjava_button.button": {
       "$button_text": "bruv"
     }
   //#endif

@@ -1,12 +1,12 @@
 {
-  namespace = "kmjava:title",
+  namespace = "kmjava_title",
 
   title_screen = {
     type = "panel",
     controls = [
-      { title@kmjava:title.title = {} },
-      { menu@kmjava:title.menu = {} },
-      { bottom_text@kmjava:title.bottom_text = {} }
+      { title@kmjava_title.title = {} },
+      { menu@kmjava_title.menu = {} },
+      { bottom_text@kmjava_title.bottom_text = {} }
     ]
   },
 
@@ -47,28 +47,29 @@
     offset = [0, "25% + 48px"],
     controls = [
       {
-        play_button@kmjava:button.button = {
+        play_button@kmjava_button.button = {
           $button_text = "menu.play",
           $pressed_button_name = "button.menu_play",
           offset = [0, 0]
         }
       },
       {
-        achievements_button@kmjava:button.button = {
+        achievements_button@kmjava_button.button = {
           $button_text = "menu.achievements",
           $pressed_button_name = "button.menu_achievements",
+          enabled = "(not $education_edition)",
           offset = [0, 24]
         }
       },
       {
-        store_button@kmjava:button.button = {
+        store_button@kmjava_button.button = {
           $button_text = "menu.store",
           $pressed_button_name = "button.menu_store",
           offset = [0, 48]
         }
       },
       {
-        settings_button@kmjava:button.button = {
+        settings_button@kmjava_button.button = {
           size = [98, 20],
           $button_text = "menu.settings",
           $pressed_button_name = "button.menu_settings",
@@ -76,11 +77,17 @@
         }
       },
       {
-        quit_button@kmjava:button.button = {
+        quit_button@kmjava_button.button = {
           size = [98, 20],
           $button_text = "menu.quit",
           $pressed_button_name = "button.menu_exit",
           offset = [100, "72px + 12px"]
+        }
+      },
+      {
+        buy_game_button@start.main_button = {
+          $pressed_button_name = "button.menu_buy_game",
+          $button_text = "trial.pauseScreen.buyGame"
         }
       }
     ]
