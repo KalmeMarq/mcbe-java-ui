@@ -1,3 +1,5 @@
+#include "helpers.jsonui"
+
 {
   namespace = "kmjava_button",
 
@@ -37,7 +39,7 @@
   button_state = {
     type = "panel",
     $button_txr|default = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button.png",
-    $button_text_color|default = "white",
+    $button_text_color|default = COLOR_RGB(255, 255, 255),
     $button_content|default = "kmjava_button.button_label",
     controls = [
       {

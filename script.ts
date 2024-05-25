@@ -110,6 +110,10 @@ class DefineContext {
     return true;
   }
 
+  getDefines() {
+    return this._map.values();
+  }
+
   [Symbol.iterator](): Iterator<Define> {
     const that = this;
     function* iter() {
@@ -168,6 +172,10 @@ class Preprocessor {
 
   private canProcess(): boolean {
     return !this._excluding && this._ifs.every((it) => it);
+  }
+
+  public getContext() {
+    return this._context;
   }
 
   private processLine(line: string): string {
@@ -255,7 +263,13 @@ class Preprocessor {
       } else if (trimmedLine.startsWith('#exclude')) {
         this._excluding = true;
       } else if (trimmedLine.startsWith('#endexclude')) {
-        this._excluding = false;
+      } else if (trimmedLine.startsWith('#include ')) {
+        const includeFile = trimmedLine.split(' ').slice(1).join(' ').slice(1, -1);
+        const tempPreprocessor = new Preprocessor(this._parentContext);
+        tempPreprocessor.process(Deno.readTextFileSync(resolve('pack/include', includeFile)));
+        for (const define of tempPreprocessor.getContext().getDefines()) {
+          this._context.add(define);
+        }
       } else if (trimmedLine.startsWith('#if')) {
         const expression = trimmedLine
           .trimStart()
