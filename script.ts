@@ -1,4 +1,5 @@
 import { copySync, existsSync, walkSync, ensureDirSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
+import { debounce } from 'https://deno.land/std@0.224.0/async/mod.ts';
 import { resolve, relative, dirname } from 'https://deno.land/std@0.224.0/path/mod.ts';
 import jsep from 'npm:jsep@1.3.8';
 import { JSONC } from 'https://deno.land/x/jsonc_parser@v0.0.1/mod.ts';
@@ -21,13 +22,11 @@ function profilerPop() {
 }
 
 function profilerAll() {
-  console.log(
-    'Total: ' +
-      Object.values(_PROFILER.entries)
-        .reduce((pv, cv) => pv + cv)
-        .toFixed(2) +
-      'ms'
-  );
+  const n = Object.values(_PROFILER.entries);
+  if (n.length == 0) return;
+
+  console.log('Total: ' + n.reduce((pv, cv) => pv + cv).toFixed(2) + 'ms');
+  _PROFILER.entries = {};
 }
 
 export type MCPEVersion = `MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
@@ -438,6 +437,11 @@ async function main() {
   if (getMCPEVersionNumerically(config.targetVersion) < getMCPEVersionNumerically('MCPE_0_16')) {
     const minecraftAppData = profile?.minecraftAppData!;
 
+    if (existsSync('out')) {
+      Deno.removeSync('out');
+    }
+    Deno.symlinkSync(minecraftAppData, 'out');
+
     const langPath = getMCPEVersionNumerically(config.targetVersion) > getMCPEVersionNumerically('MCPE_0_13') ? 'loc' : 'lang';
 
     rootContext.add(createDefine('DEFAULT_TEXTURES_PATH', ''));
@@ -551,6 +555,116 @@ async function main() {
     profilerPop();
 
     profilerAll();
+
+    if (Deno.args.includes('-w')) {
+      const watcher = Deno.watchFs('pack');
+
+      Deno.addSignalListener('SIGINT', () => {
+        watcher.close();
+      });
+
+      const handleEvent = debounce((event: Deno.FsEvent) => {
+        const entryPath = relative('pack', event.paths[0]);
+        const entryDirname = dirname(entryPath).replaceAll('\\', '/');
+
+        if (entryDirname == '.') {
+          profilerPush('Root files changed');
+          for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) resultContent = translateToJson(resultContent!);
+            const filename = relative('pack', entry.path).replace('.jsonui', '.json');
+
+            if (existsSync(resolve(minecraftAppData, filename)) && !existsSync(resolve(minecraftAppData, filename + '-backup'))) {
+              Deno.copyFileSync(resolve(minecraftAppData, filename), resolve(minecraftAppData, filename + '-backup'));
+            }
+
+            Deno.writeTextFileSync(resolve(minecraftAppData, filename), resultContent!);
+          }
+          profilerPop();
+        } else if (entryDirname.startsWith('langs')) {
+          profilerPush('langs files changed');
+
+          for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+
+            const filename = relative('pack/langs', entry.path).replace('.jsonui', '.json');
+            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
+
+            if (!success) continue;
+
+            if (isJSONUI) resultContent = translateToJson(resultContent!);
+
+            const code = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
+            let vani = Deno.readTextFileSync(resolve(minecraftAppData, langPath + '_backup/' + code + '-pocket.lang'));
+            vani += '\n\n## Custom';
+
+            for (const [key, value] of Object.entries(JSONC.parse(resultContent!))) {
+              vani += '\n' + key + '=' + value;
+            }
+
+            Deno.writeTextFileSync(resolve(minecraftAppData, langPath + '/' + code + '-pocket.lang'), vani);
+          }
+
+          profilerPop();
+        } else if (entryDirname.startsWith('textures/custom')) {
+          profilerPush('textures/custom files changed');
+
+          if (!existsSync(resolve(minecraftAppData, 'images/out'))) {
+            Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
+          } else {
+            Deno.removeSync(resolve(minecraftAppData, 'images/out'), { recursive: true });
+            Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
+          }
+
+          for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
+            if (!entry.path.endsWith('.png')) continue;
+            const filename = relative('pack/textures/custom', entry.path);
+            ensureDirSync(resolve(minecraftAppData, 'images/out', dirname(filename)));
+            Deno.copyFileSync(entry.path, resolve(minecraftAppData, 'images/out', filename));
+          }
+
+          profilerPop();
+        } else if (entryDirname.startsWith('ui/custom')) {
+          profilerPush('ui/custom files changed');
+          if (existsSync(minecraftAppData + '/ui/out')) {
+            Deno.removeSync(minecraftAppData + '/ui/out', { recursive: true });
+          }
+
+          for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
+            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) content = translateToJson(content!);
+
+            ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
+            Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', 'out', filename), content!);
+          }
+          profilerPop();
+        } else if (entryDirname.startsWith('ui/default')) {
+          profilerPush('ui/default files changed');
+          copySync(resolve(minecraftAppData, 'ui_backup'), resolve(minecraftAppData, 'ui'), { overwrite: true });
+          for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
+            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) content = translateToJson(content!);
+
+            Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
+          }
+          profilerPop();
+        }
+
+        profilerAll();
+      }, 200);
+
+      for await (const event of watcher) {
+        handleEvent(event);
+      }
+    }
   } else {
     const resourcePackPath = profile?.resourcePackPath!;
 
@@ -563,6 +677,11 @@ async function main() {
       Deno.removeSync(resourcePackPath, { recursive: true });
     }
     Deno.mkdirSync(resourcePackPath);
+
+    if (existsSync('out')) {
+      Deno.removeSync('out');
+    }
+    Deno.symlinkSync(resourcePackPath, 'out');
 
     ensureDirSync(resolve(resourcePackPath, 'assets'));
     ensureDirSync(resolve(resourcePackPath, 'texts'));
@@ -640,6 +759,103 @@ async function main() {
     profilerPop();
 
     profilerAll();
+
+    if (Deno.args.includes('-w')) {
+      const watcher = Deno.watchFs('pack');
+
+      Deno.addSignalListener('SIGINT', () => {
+        watcher.close();
+      });
+
+      const handleEvent = debounce((event: Deno.FsEvent) => {
+        const entryPath = relative('pack', event.paths[0]);
+        const entryDirname = dirname(entryPath).replaceAll('\\', '/');
+
+        if (entryDirname == '.') {
+          profilerPush('root files changed');
+          for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) resultContent = translateToJson(resultContent!);
+            const filename = relative('pack', entry.path).replace('.jsonui', '.json');
+
+            Deno.writeTextFileSync(resolve(resourcePackPath, filename), resultContent!);
+          }
+          profilerPop();
+        } else if (entryDirname.startsWith('langs')) {
+          profilerPush('langs files changed');
+          for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+
+            const filename = relative('pack/langs', entry.path).replace('.jsonui', '.json');
+            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) resultContent = translateToJson(resultContent!);
+            const code = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
+
+            let vani = '## Custom';
+
+            for (const [key, value] of Object.entries(JSONC.parse(resultContent!))) {
+              vani += '\n' + key + '=' + value;
+            }
+
+            Deno.writeTextFileSync(resolve(resourcePackPath, 'texts', `${code}.lang`), vani);
+          }
+          profilerPop();
+        } else if (entryDirname.startsWith('textures/custom')) {
+          profilerPush('textures/custom files changed');
+
+          if (existsSync(resolve(resourcePackPath, 'assets'))) {
+            Deno.removeSync(resolve(resourcePackPath, 'assets'));
+          }
+
+          for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
+            if (!entry.path.endsWith('.png')) continue;
+            const filename = relative('pack/textures/custom', entry.path);
+            ensureDirSync(resolve(resourcePackPath, 'assets', dirname(filename)));
+            Deno.copyFileSync(entry.path, resolve(resourcePackPath, 'assets', filename));
+          }
+
+          profilerPop();
+        } else if (entryDirname.startsWith('ui/custom')) {
+          profilerPush('ui/custom files changed');
+          if (existsSync(resolve(resourcePackPath, 'ui', 'out'))) {
+            Deno.removeSync(resolve(resourcePackPath, 'ui', 'out'), { recursive: true });
+          }
+
+          for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
+            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) content = translateToJson(content!);
+
+            ensureDirSync(resolve(resourcePackPath, 'ui', 'out', dirname(filename)));
+            Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', 'out', filename), content!);
+          }
+          profilerPop();
+        } else if (entryDirname.startsWith('ui/default')) {
+          profilerPush('ui/default files changed');
+          for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
+            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) content = translateToJson(content!);
+
+            Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
+          }
+          profilerPop();
+        }
+
+        profilerAll();
+      }, 200);
+
+      for await (const event of watcher) {
+        handleEvent(event);
+      }
+    }
   }
 }
 

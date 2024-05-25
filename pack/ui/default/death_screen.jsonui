@@ -1,0 +1,10 @@
+#ignore MCPE_CURRENT < MCPE_0_16
+{
+  namespace = "death",
+
+  death_screen@common.base_screen = {
+    controls = [
+      { screen_content@kmjava_death.screen_content = {} }
+    ]
+  }
+}

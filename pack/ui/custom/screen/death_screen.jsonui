@@ -1,0 +1,74 @@
+#ignore MCPE_CURRENT < MCPE_0_16
+#include "helpers.jsonui"
+{
+  namespace = "kmjava_death",
+
+  background_gradient = {
+    type = "custom",
+    renderer = "gradient_renderer",
+    color1 = COLOR_RGBA(80, 0, 0, 96),
+    color2 = COLOR_RGBA(128, 48, 48, 160),
+    variables = [
+      {
+        requires = "$is_holographic",
+        visible = false
+      }
+    ]
+  },
+
+  you_died_label = {
+    type = "label",
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    offset = [0, 30],
+    text = "deathScreen.message",
+    shadow = true,
+    font_size = "large"
+  },
+
+  // TODO: Animate the locked state
+
+  respawn_button@kmjava_button.button = {
+    $button_text = "deathScreen.respawn",
+    offset = ["50% - 100px", "25% + 72px"],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.respawn_button",
+        mapping_type = "pressed"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.respawn_button",
+        mapping_type = "pressed"
+      }
+    ]
+  },
+
+  main_menu_button@kmjava_button.button = {
+    $button_text = "deathScreen.quit",
+    offset = ["50% - 100px", "25% + 96px"],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.main_menu_button",
+        mapping_type = "pressed"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.main_menu_button",
+        mapping_type = "pressed"
+      }
+    ]
+  },
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      { background_gradient@kmjava_death.background_gradient = {} },
+      { you_died_label@kmjava_death.you_died_label = {} },
+      { respawn_button@kmjava_death.respawn_button = {} },
+      { main_menu_button@kmjava_death.main_menu_button = {} }
+    ]
+  }
+}

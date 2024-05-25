@@ -3,9 +3,13 @@
 
 #if MCPE_CURRENT >= MCPE_0_13
   start_screen@common.base_screen = {
+#if MCPE_CURRENT >= MCPE_0_16
+    $screen_content = "kmjava_title.screen_content",
+#else
     controls = [
       { screen_content@kmjava_title.screen_content = {} }
     ],
+#endif
     button_mappings = [
       {
         from_button_id = "button.menu_cancel",

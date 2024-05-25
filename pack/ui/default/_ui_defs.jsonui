@@ -1,6 +1,9 @@
 {
   ui_defs = [
 DEFAULT_ENTRIES
+#if MCPE_CURRENT >= MCPE_0_16
+    "CUSTOM_UI_PATH/screen/death_screen.json",
+#endif
     "CUSTOM_UI_PATH/button.json",
     "CUSTOM_UI_PATH/screen/title_screen.json"
   ]

@@ -1,2 +1,2 @@
-#definefunc COLOR_RGBA(red, green, blue, alpha) [##red|/255##, ##green|/255##, ##blue|/255##, ##alpha##]
+#definefunc COLOR_RGBA(red, green, blue, alpha) [##red|/255##, ##green|/255##, ##blue|/255##, ##alpha|/255##]
 #definefunc COLOR_RGB(red, green, blue) [##red|/255##, ##green|/255##, ##blue|/255##]
