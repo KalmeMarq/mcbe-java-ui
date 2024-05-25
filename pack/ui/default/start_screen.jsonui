@@ -1,0 +1,118 @@
+{
+  namespace = "start",
+
+#if MCPE_CURRENT >= MCPE_0_13
+  start_screen@common.base_screen = {
+    controls = [
+      { screen_content@kmjava_title.screen_content = {} }
+    ],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_cancel",
+        to_button_id = "button.menu_exit",
+        mapping_type = "global"
+      },
+      {
+        from_button_id = "button.menu_up",
+        to_button_id = "button.menu_up",
+        mapping_type = "global",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_down",
+        to_button_id = "button.menu_down",
+        mapping_type = "global",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_left",
+        to_button_id = "button.menu_left",
+        mapping_type = "global",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_right",
+        to_button_id = "button.menu_right",
+        mapping_type = "global",
+        scope = "view"
+      }
+    ]
+  }
+#else
+  screen = {
+    type = "screen",
+    button_mappings = [
+      {
+        from_button_id = "button.menu_cancel",
+        to_button_id = "button.menu_exit",
+        condition = "none"
+      },
+      {
+        from_button_id = "button.menu_up",
+        to_button_id = "button.menu_up",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_down",
+        to_button_id = "button.menu_down",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_left",
+        to_button_id = "button.menu_left",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_right",
+        to_button_id = "button.menu_right",
+        condition = "none",
+        scope = "view"
+      }
+    ],
+    controls = [
+      { content@kmjava_title.screen_content = {} }
+    ]
+  },
+
+  screenTrial = {
+    type = "screen",
+    button_mappings = [
+      {
+        from_button_id = "button.menu_cancel",
+        to_button_id = "button.menu_exit",
+        condition = "none"
+      },
+      {
+        from_button_id = "button.menu_up",
+        to_button_id = "button.menu_up",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_down",
+        to_button_id = "button.menu_down",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_left",
+        to_button_id = "button.menu_left",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_right",
+        to_button_id = "button.menu_right",
+        condition = "none",
+        scope = "view"
+      }
+    ],
+    controls = [
+      { content@kmjava_title.trial_screen_content = {} }
+    ]
+  }
+#endif
+}

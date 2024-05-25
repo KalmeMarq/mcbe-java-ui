@@ -11,6 +11,7 @@ I also use a custom format .jsonui. It's similar to json but I don't use comment
 ```
 #define <name>
 #define <name> <expression>
+#definefunc <name>([<params>]) <expression>
 ```
 
 ```

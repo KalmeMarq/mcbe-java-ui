@@ -1,0 +1,656 @@
+{
+  namespace = "kmjava_title",
+
+#if MCPE_CURRENT >= MCPE_0_14
+  language_icon = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/language.png",
+    size = [15, 15],
+    uv_size = [15, 15],
+    uv = [0, 0],
+    layer = 4
+  },
+
+#if MCPE_CURRENT >= MCPE_0_15
+  skins_icon = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/accessibility.png",
+    size = [15, 15],
+    uv_size = [15, 15],
+    uv = [0, 0],
+    layer = 4
+  },
+#endif
+
+  copyright_text = {
+    type = "label",
+    size = [0, 10],
+    alignment = "top_right",
+    layer = 2,
+    offset = [-3, 0],
+    text = "menu.copyright",
+    anchor_from = "bottom_right",
+    anchor_to = "bottom_right"
+  },
+
+  version_text = {
+    type = "label",
+    size = [50, 10],
+    offset = [54, 1],
+    anchor_from = "bottom_left",
+    anchor_to = "bottom_left",
+    alignment = "top_left",
+    layer = 2,
+    text = "#version",
+    shadow = true,
+    bindings = [
+      { binding_name = "#version" }
+    ]
+  },
+
+  version = {
+    type = "panel",
+    anchor_from = "bottom_left",
+    anchor_to = "bottom_left",
+    size = ["100%", 10],
+    offset = [1, 0],
+    controls = [
+      {
+        minecraft = {
+          type = "label",
+          text = "Minecraft",
+          size = [50, 10],
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          shadow = true
+        }
+      },
+      { version_text@kmjava_title.version_text = {} }
+    ]
+  },
+
+  title = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/minecraft.png",
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    size = [256, 44],
+    offset = [0, 30],
+    uv_size = [1024, 176],
+    uv = [0, 0],
+    controls = [
+      {
+        edition = {
+          type = "image",
+          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/edition.png",
+          anchor_from = "bottom_middle",
+          anchor_to = "bottom_middle",
+          size = [128, 14],
+          offset = [0, 7],
+          uv_size = [512, 56],
+          uv = [0, 0]
+        }
+      },
+      {
+        splash_text = {
+          type = "custom",
+          renderer = "splash_text_renderer",
+          size = [32, 32],
+          anchor_from = "bottom_right",
+          anchor_to = "bottom_right",
+          layer = 4
+        }
+      }
+    ]
+  },
+
+  play_button@kmjava_button.button = {
+    $button_text = "menu.play",
+    $pressed_button_name = "button.menu_play"
+  },
+
+  achievements_button@kmjava_button.button = {
+    $button_text = "menu.achievements",
+    $pressed_button_name = "button.menu_achievements"
+  },
+
+#if MCPE_CURRENT >= MCPE_0_15
+  store_button@kmjava_button.button = {
+    $pressed_button_name = "button.menu_store",
+    $button_text = "menu.store"
+  },
+#endif
+
+  skins_button@kmjava_button.button = {
+#if MCPE_CURRENT >= MCPE_0_15
+    size = [20, 20],
+    $button_content = "kmjava_title.skins_icon",
+#else
+    $button_text = "menu.skins",
+#endif
+    $pressed_button_name = "button.menu_skins"
+  },
+
+  settings_button@kmjava_button.button = {
+    size = [98, 20],
+    $button_text = "menu.options",
+#if MCPE_CURRENT > MCPE_0_14
+    $pressed_button_name = "button.menu_settings"
+#else
+    $pressed_button_name = "button.menu_options"
+#endif
+  },
+
+  quit_button@kmjava_button.button = {
+    size = [98, 20],
+    $button_text = "menu.quit",
+    $pressed_button_name = "button.menu_exit"
+  },
+
+  language_button@kmjava_button.button = {
+    size = [20, 20],
+    $button_content = "kmjava_title.language_icon",
+    $pressed_button_name = "button.menu_language"
+  },
+
+  buttons_panel = {
+    type = "panel",
+    controls = [
+      { play_button@kmjava_title.play_button = { offset = ["50% - 100px", "25% + 48px"] } },
+      { achievements_button@kmjava_title.achievements_button = { offset = ["50% - 100px", "25% + 48px + 24px"] } },
+#if MCPE_CURRENT >= MCPE_0_15
+      { store_button@kmjava_title.store_button = { offset = ["50% - 100px", "25% + 48px + 48px"] } },
+      { skins_button@kmjava_title.skins_button = { offset = ["50% + 100px + 2px", "25% + 48px + 72px + 12px"] } },
+#else
+      { skins_button@kmjava_title.skins_button = { offset = ["50% - 100px", "25% + 48px + 48px"] } },
+#endif
+      { language_button@kmjava_title.language_button = { offset = ["50% - 100px - 24px", "25% + 48px + 72px + 12px"] } },
+      { settings_button@kmjava_title.settings_button = { offset = ["50% - 100px", "25% + 48px + 72px + 12px"] } },
+      { quit_button@kmjava_title.quit_button = { offset = ["50% + 2px", "25% + 48px + 72px + 12px"] } }
+    ]
+  },
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      { title@kmjava_title.title = {} },
+      { copyright_text@kmjava_title.copyright_text = {} },
+      { version@kmjava_title.version = {} },
+      { buttons_panel@kmjava_title.buttons_panel = {} }
+    ]
+  }
+
+#else
+
+  copyright_text = {
+    type = "label",
+    size = [0, 10],
+#if MCPE_CURRENT < MCPE_0_13
+    alignment = "right",
+    z_order = 2,
+#else
+    alignment = "top_right",
+    layer = 2,
+#endif
+    offset = [-3, 0],
+    text = "menu.copyright",
+    anchor_from = "bottom_right",
+    anchor_to = "bottom_right"
+  },
+
+  version_text = {
+    type = "label",
+    size = [ 50, 10 ],
+#if MCPE_CURRENT < MCPE_0_13
+    alignment = "right",
+    z_order = 2,
+    offset = [38, 0],
+#else
+    offset = [56, 0],
+    alignment = "top_left",
+    layer = 2,
+#endif
+    text = "#version",
+    shadow = true,
+    anchor_from = "bottom_left",
+    anchor_to = "bottom_left",
+    bindings = [
+      { binding_name = "#version" }
+    ]
+  },
+
+  language_icon = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/language.png",
+    size = [15, 15],
+    uv_size = [15, 15],
+    uv = [0, 0],
+#if MCPE_CURRENT < MCPE_0_13
+    z_order = 4
+#else
+    layer = 4
+#endif
+  },
+
+  title = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/minecraft.png",
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    size = [256, 44],
+    offset = [0, 30],
+    uv_size = [1024, 176],
+    uv = [0, 0],
+    controls = [
+      {
+        edition = {
+          type = "image",
+          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/edition.png",
+          anchor_from = "bottom_middle",
+          anchor_to = "bottom_middle",
+          size = [128, 14],
+          offset = [0, 7],
+          uv_size = [512, 56],
+          uv = [0, 0]
+        }
+      },
+      {
+        splash_text = {
+          type = "custom",
+          renderer = "splash_text_renderer",
+          size = [32, 32],
+          anchor_from = "bottom_right",
+          anchor_to = "bottom_right",
+#if MCPE_CURRENT < MCPE_0_13
+          z_order = 4
+#else
+          layer = 4
+#endif
+        }
+      }
+    ]
+  },
+
+  version = {
+    type = "panel",
+    anchor_from = "bottom_left",
+    anchor_to = "bottom_left",
+    size = ["100%", 10],
+    offset = [1, 0],
+    controls = [
+      {
+        minecraft = {
+          type = "label",
+          text = "Minecraft",
+          size = [50, 10],
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          shadow = true
+        }
+      },
+      { version_text@kmjava_title.version_text = {} }
+    ]
+  },
+
+  play_button@kmjava_button.button = {
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_play",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_play",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default@kmjava_button.button_default_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.play" } }
+          ]
+        }
+      },
+      {
+        hover@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.play" } }
+          ]
+        }
+      },
+      {
+        pressed@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.play" } }
+          ]
+        }
+      }
+    ]
+  },
+
+  achievements_button@kmjava_button.button = {
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_achievements",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_achievements",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default@kmjava_button.button_default_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.achievements" } }
+          ]
+        }
+      },
+      {
+        hover@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.achievements" } }
+          ]
+        }
+      },
+      {
+        pressed@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.achievements" } }
+          ]
+        }
+      }
+    ]
+  },
+
+  skins_button@kmjava_button.button = {
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_skins",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_skins",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default@kmjava_button.button_default_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.skins" } }
+          ]
+        }
+      },
+      {
+        hover@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.skins" } }
+          ]
+        }
+      },
+      {
+        pressed@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "menu.skins" } }
+          ]
+        }
+      }
+    ]
+  },
+
+  language_button@kmjava_button.button = {
+    size = [20, 20],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_language",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_language",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_20_left_default_background = {} },
+            { right@kmjava_button.button_20_right_default_background = {} },
+            { icon@kmjava_title.language_icon = {} }
+          ]
+        }
+      },
+      {
+        hover = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_20_left_hover_background = {} },
+            { right@kmjava_button.button_20_right_hover_background = {} },
+            { icon@kmjava_title.language_icon = {} }
+          ]
+        }
+      },
+      {
+        pressed = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_20_left_hover_background = {} },
+            { right@kmjava_button.button_20_right_hover_background = {} },
+            { icon@kmjava_title.language_icon = {} }
+          ]
+        }
+      }
+    ]
+  },
+
+  settings_button@kmjava_button.button = {
+    size = [98, 20],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_options",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_options",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_98_left_default_background = {} },
+            { right@kmjava_button.button_98_right_default_background = {} },
+            { text@kmjava_button.button_text = { text = "menu.options" } }
+          ]
+        }
+      },
+      {
+        hover = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_98_left_hover_background = {} },
+            { right@kmjava_button.button_98_right_hover_background = {} },
+            { text@kmjava_button.button_text = { text = "menu.options" } }
+          ]
+        }
+      },
+      {
+        pressed = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_98_left_hover_background = {} },
+            { right@kmjava_button.button_98_right_hover_background = {} },
+            { text@kmjava_button.button_text = { text = "menu.options" } }
+          ]
+        }
+      }
+    ]
+  },
+
+  quit_button@kmjava_button.button = {
+    size = [98, 20],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_exit",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_exit",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_98_left_default_background = {} },
+            { right@kmjava_button.button_98_right_default_background = {} },
+            { text@kmjava_button.button_text = { text = "menu.quit" } }
+          ]
+        }
+      },
+      {
+        hover = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_98_left_hover_background = {} },
+            { right@kmjava_button.button_98_right_hover_background = {} },
+            { text@kmjava_button.button_text = { text = "menu.quit" } }
+          ]
+        }
+      },
+      {
+        pressed = {
+          type = "panel",
+          controls = [
+            { left@kmjava_button.button_98_left_hover_background = {} },
+            { right@kmjava_button.button_98_right_hover_background = {} },
+            { text@kmjava_button.button_text = { text = "menu.quit" } }
+          ]
+        }
+      }
+    ]
+  },
+
+  buttons_panel = {
+    type = "panel",
+    size = [200, 20],
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    offset = [0, "25% + 48px"],
+    controls = [
+      { play_button@kmjava_title.play_button = { offset = [0, 0] } },
+      { achievements_button@kmjava_title.achievements_button = { offset = [0, 24] } },
+      { skins_button@kmjava_title.skins_button = { offset = [0, 48] } },
+      { language_button@kmjava_title.language_button = { offset = [-114, 90] } },
+      { settings_button@kmjava_title.settings_button = { offset = [-51, 90] } },
+      { quit_button@kmjava_title.quit_button = { offset = [51, 90] } }
+    ]
+  },
+
+  buy_game_button@kmjava_button.button = {
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_buy_game",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_buy_game",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        default@kmjava_button.button_default_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "trial.pauseScreen.buyGame" } }
+          ]
+        }
+      },
+      {
+        hover@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "trial.pauseScreen.buyGame" } }
+          ]
+        }
+      },
+      {
+        pressed@kmjava_button.button_hover_background = {
+          controls = [
+            { text@kmjava_button.button_text = { text = "trial.pauseScreen.buyGame" } }
+          ]
+        }
+      }
+    ]
+  },
+
+  trial_buttons_panel = {
+    type = "panel",
+    size = [200, 20],
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    offset = [0, "25% + 48px"],
+    controls = [
+      { play_button@kmjava_title.play_button = { offset = [0, 0] } },
+      { achievements_button@kmjava_title.achievements_button = { offset = [0, 24] } },
+      { skins_button@kmjava_title.skins_button = { offset = [0, 48] } },
+      { language_button@kmjava_title.language_button = { offset = [-114, 90] } },
+      { settings_button@kmjava_title.settings_button = { offset = [-51, 90] } },
+      { quit_button@kmjava_title.quit_button = { offset = [51, 90] } },
+      { buy_game_button@kmjava_title.buy_game_button = { offset = [0, 100] } }
+    ]
+  },
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      {
+        menu_background = {
+          type = "custom",
+          renderer = "menu_background_renderer"
+        }
+      },
+      { version@kmjava_title.version = {} },
+      { copyright@kmjava_title.copyright_text = {} },
+      { title@kmjava_title.title = {} },
+      { buttons@kmjava_title.buttons_panel = {} }
+    ]
+  },
+
+  trial_screen_content = {
+    type = "panel",
+    controls = [
+      {
+        menu_background = {
+          type = "custom",
+          renderer = "menu_background_renderer"
+        }
+      },
+      { version@kmjava_title.version = {} },
+      { copyright@kmjava_title.copyright_text = {} },
+      { title@kmjava_title.title = {} },
+      { buttons@kmjava_title.trial_buttons_panel = {} }
+    ]
+  }
+#endif
+}

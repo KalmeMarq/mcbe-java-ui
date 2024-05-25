@@ -1,0 +1,177 @@
+{
+  namespace = "kmjava_button",
+
+#if MCPE_CURRENT >= MCPE_0_14
+  button@common.button = {
+    size = [200, 20],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    $button_text|default = "",
+    controls = [
+      {
+        default@kmjava_button.button_state = {
+          $button_txr = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button.png"
+        }
+      },
+      {
+        hover@kmjava_button.button_state = {
+          $button_txr = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png"
+        }
+      },
+      {
+        pressed@kmjava_button.button_state = {
+          $button_txr = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png"
+        }
+      }
+    ]
+  },
+
+  button_label = {
+    type = "label",
+    text = "$button_text",
+    color = "$button_text_color",
+    shadow = true,
+    layer = 2
+  },
+
+  button_state = {
+    type = "panel",
+    $button_txr|default = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button.png",
+    $button_text_color|default = "white",
+    $button_content|default = "kmjava_button.button_label",
+    controls = [
+      {
+        left = {
+          type = "panel",
+          size = ["50%", 22],
+          offset = [0, -1],
+          clips_children = true,
+          anchor_from = "top_left",
+          anchor_to = "top_left",
+          controls = [
+            {
+              txr = {
+                type = "image",
+                texture = "$button_txr",
+                size = [200, 20],
+                offset = [0, 1],
+                uv = [0, 0],
+                uv_size = [200, 20],
+                anchor_from = "top_left",
+                anchor_to = "top_left"
+              }
+            }
+          ]
+        }
+      },
+      {
+        right = {
+          type = "panel",
+          size = ["50%", 22],
+          offset = [0, -1],
+          clips_children = true,
+          anchor_from = "top_right",
+          anchor_to = "top_right",
+          controls = [
+            {
+              txr = {
+                type = "image",
+                texture = "$button_txr",
+                size = [200, 20],
+                offset = [0, 1],
+                uv = [0, 0],
+                uv_size = [200, 20],
+                anchor_from = "top_right",
+                anchor_to = "top_right"
+              }
+            }
+          ]
+        }
+      },
+      { content@$button_content = {} }
+    ]
+  }
+
+#else
+  button_background = {
+    type = "image",
+    uv_size = [200, 20],
+    size = [200, 20],
+    uv = [0, 0]
+  },
+
+  button_default_background@kmjava_button.button_background = {
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button.png"
+  },
+
+  button_hover_background@kmjava_button.button_background = {
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png"
+  },
+
+  button_98_left_default_background@kmjava_button.button_default_background = {
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    uv_size = [49, 20],
+    size = [49, 20]
+  },
+
+  button_98_right_default_background@kmjava_button.button_default_background = {
+    anchor_from = "top_right",
+    anchor_to = "top_right",
+    uv = [151, 0],
+    uv_size = [49, 20],
+    size = [49, 20]
+  },
+
+  button_98_left_hover_background@kmjava_button.button_98_left_default_background = {
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png",
+    uv = [0, 0],
+    size = [49, 20]
+  },
+
+  button_98_right_hover_background@kmjava_button.button_98_right_default_background = {
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png",
+    uv = [151, 0],
+    size = [49, 20]
+  },
+
+  button_20_left_default_background@kmjava_button.button_98_left_default_background = {
+    uv = [0, 0],
+    uv_size = [10, 20],
+    size = [10, 20]
+  },
+
+  button_20_right_default_background@kmjava_button.button_98_right_default_background = {
+    uv = [190, 0],
+    uv_size = [10, 20],
+    size = [10, 20]
+  },
+
+  button_20_left_hover_background@kmjava_button.button_98_left_hover_background = {
+    uv = [0, 0],
+    uv_size = [10, 20],
+    size = [10, 20]
+  },
+
+  button_20_right_hover_background@kmjava_button.button_98_right_hover_background = {
+    uv = [190, 0],
+    uv_size = [10, 20],
+    size = [10, 20]
+  },
+
+  button_text = {
+    type = "label",
+    shadow = true,
+    offset = [0, 1],
+#if MCPE_CURRENT > MCPE_0_12
+    layer = 4
+#else
+    z_order = 4
+#endif
+  },
+
+  button@common.button = {
+    size = [200, 20]
+  }
+#endif
+}

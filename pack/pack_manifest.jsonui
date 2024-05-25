@@ -1,0 +1,45 @@
+#ignore MCPE_CURRENT < MCPE_0_16
+
+#define PACK_NAME "Java UI - KM"
+#define PACK_DESC "Created by KalmeMarq"
+
+#define PACK_VERSION_MAJOR 1
+#define PACK_VERSION_MINOR 0
+
+#define PACK_UUID "0132155b-0ef1-4588-9857-fca7b1c9d38e"
+#define PACK_MODULE_UUID "b4f404d6-1a90-4709-b1f6-15778d2633c6"
+
+{
+#if MCPE_CURRENT >= MCPE_1_1
+  format_version = 1,
+  header = {
+    uuid = PACK_UUID,
+    name = PACK_NAME,
+    version = [PACK_VERSION_MAJOR, PACK_VERSION_MINOR, 0],
+    description = PACK_DESC
+  },
+  modules = [
+    {
+      version = [PACK_VERSION_MAJOR, PACK_VERSION_MINOR, 0],
+      description = PACK_DESC,
+      uuid = PACK_MODULE_UUID,
+      type = "resources"
+    }
+  ]
+#else
+  header = {
+    pack_id = PACK_UUID,
+    name = PACK_NAME,
+    packs_version = "PACK_VERSION_MAJOR.PACK_VERSION_MINOR.0",
+    description = PACK_DESC,
+    modules = [
+      {
+        description = PACK_DESC,
+        version = "PACK_VERSION_MAJOR.PACK_VERSION_MINOR.0",
+        uuid = PACK_MODULE_UUID,
+        type = "resources"
+      }
+    ]
+  }
+#endif
+}
