@@ -1,0 +1,42 @@
+#ignore MCPE_CURRENT < MCPE_0_13
+{
+  namespace = "language_choice",
+
+  screen = {
+    type = "screen",
+    button_mappings = [
+      {
+        from_button_id = "button.menu_cancel",
+        to_button_id = "button.menu_exit",
+        condition = "none"
+      },
+      {
+        from_button_id = "button.menu_up",
+        to_button_id = "button.menu_up",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_down",
+        to_button_id = "button.menu_down",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_left",
+        to_button_id = "button.menu_left",
+        condition = "none",
+        scope = "view"
+      },
+      {
+        from_button_id = "button.menu_right",
+        to_button_id = "button.menu_right",
+        condition = "none",
+        scope = "view"
+      }
+    ],
+    controls = [
+      { screen_content@kmjava_language_choice.screen_content = {} }
+    ]
+  }
+}

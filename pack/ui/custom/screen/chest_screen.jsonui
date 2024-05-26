@@ -1,0 +1,187 @@
+{
+  namespace = "kmjava_chest",
+
+  large_chest_container_bg = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/container/generic_54.png",
+    uv = [0, 0],
+    uv_size = [176, 222],
+    size = [176, 222]
+  },
+
+  small_chest_container_bg = {
+    type = "panel",
+    size = [176, 167],
+    controls = [
+      {
+        top@kmjava_chest.large_chest_container_bg = {
+          anchor_from = "top_left",
+          anchor_to = "top_left",
+          uv_size = [176, 71],
+          size = [176, 71]
+        }
+      },
+      {
+        bottom@kmjava_chest.large_chest_container_bg = {
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          uv = [0, 126],
+          uv_size = [176, 96],
+          size = [176, 96]
+        }
+      }
+    ]
+  },
+
+  container_title@kmjava_container.container_label = {
+    offset = [8, 6],
+    text = "container.chest"
+  },
+
+  chest_item_button@common.inventory_slot_button_prototype = {
+    layer = 2,
+    binding_collection_name = "chest_items",
+    pressed_control = "pressed",
+    controls = [
+      {
+        hover@common.highlight_slot = {
+          controls = [
+            {
+              chest_hover_text@common.hover_text = {
+                binding_collection_name = "chest_items",
+                bindings = [
+                  {
+                    binding_name = "#hover_text",
+                    binding_type = "collection"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        pressed@common.highlight_slot = {
+          controls = [
+            {
+              chest_hover_text@common.hover_text = {
+                binding_collection_name = "chest_items",
+                bindings = [
+                  {
+                    binding_name = "#hover_text",
+                    binding_type = "collection"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  chest_item_icon@common.item_renderer = {
+    size = [18, 18],
+    binding_collection_name = "chest_items",
+    bindings = [
+      {
+        binding_name = "#item_id_aux",
+        binding_type = "collection"
+      }
+    ]
+  },
+
+  chest_item_foil@common.item_foil_renderer = {
+    binding_collection_name = "chest_items",
+    bindings = [
+      {
+        binding_name = "#item_id_aux",
+        binding_type = "collection"
+      }
+    ]
+  },
+
+  chest_grid_item = {
+    type = "grid_item",
+    size = [18, 18],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    controls = [
+      { item_icon@kmjava_chest.chest_item_icon = {} },
+      { item_foil@kmjava_chest.chest_item_foil = {} },
+      { slot_button@kmjava_chest.chest_slot_button = {} },
+      {
+        stack@common.stack_count_label = {
+          binding_collection_name = "chest_items"
+        }
+      },
+      {
+        durability@common.durability_bar = {
+          binding_collection_name = "chest_items"
+        }
+      }
+    ]
+  },
+
+  small_chest_grid = {
+    type = "grid",
+    size = [162, 54],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [7, 17],
+    grid_dimensions = [9, 3],
+    grid_item_template = "kmjava_chest.chest_grid_item"
+  },
+
+  large_chest_grid = {
+    type = "grid",
+    size = [162, 108],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [7, 17],
+    grid_dimensions = [9, 6],
+    grid_item_template = "kmjava_chest.chest_grid_item"
+  },
+
+  chest_content_screen = {
+    type = "panel",
+    controls = [
+      { bg@kmjava_container.screen_background = {} },
+      {
+        root@common.root_panel = {
+          size = [176, 167],
+          controls = [
+            { title@kmjava_chest.container_title = {} },
+            { bg@kmjava_chest.small_chest_container_bg = {} },
+            { grid@kmjava_chest.small_chest_grid = {} },
+            { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
+            { @common.inventory_hold_icon_button = {} },
+            { icon@kmjava_container.inventory_selected_icon_button = {} },
+            { foil@common.inventory_selected_foil_button = {} }
+          ]
+        }
+      }
+    ]
+  },
+
+  large_chest_content_screen = {
+    type = "panel",
+    controls = [
+      { bg@kmjava_container.screen_background = {} },
+      {
+        root@common.root_panel = {
+          size = [176, 222],
+          controls = [
+            { title@kmjava_chest.container_title = {} },
+            { bg@kmjava_chest.large_chest_container_bg = {} },
+            { grid@kmjava_chest.large_chest_grid = {} },
+            { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
+            { @common.inventory_hold_icon_button = {} },
+            { icon@kmjava_container.inventory_selected_icon_button = {} },
+            { foil@common.inventory_selected_foil_button = {} }
+          ]
+        }
+      }
+    ]
+  }
+}

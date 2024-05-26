@@ -4,7 +4,7 @@ import { load } from 'https://deno.land/std@0.224.0/dotenv/mod.ts';
 const env = await load();
 
 const config: PackConfig = {
-  targetVersion: 'MCPE_0_16',
+  targetVersion: env['TARGET_VERSION'],
   profiles: [
     {
       version: 'MCPE_0_12',

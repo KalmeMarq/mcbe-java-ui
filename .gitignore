@@ -2,5 +2,6 @@
 .DS_Store
 .env
 
-pack/textures/custom
+pack/textures/custom/*
+!pack/textures/custom/.gitkeep
 out

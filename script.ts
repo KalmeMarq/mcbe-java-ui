@@ -4,30 +4,75 @@ import { resolve, relative, dirname } from 'https://deno.land/std@0.224.0/path/m
 import jsep from 'npm:jsep@1.3.8';
 import { JSONC } from 'https://deno.land/x/jsonc_parser@v0.0.1/mod.ts';
 
-const _PROFILER: { last: string; entries: Record<string, number> } = {
-  last: '',
-  entries: {}
-};
+class Profiler {
+  private _locationInfos: Map<string, { totalTime: number }> = new Map();
+  private _fullPath: string = '';
+  private _path: string[] = [];
+  private _timeInfos: number[] = [];
+  private _currentInfo?: { totalTime: number };
 
-function profilerPush(name: string) {
-  _PROFILER.last = name;
-  _PROFILER.entries[name] = performance.now();
+  public start() {
+    this._fullPath = '';
+    this._path = [];
+    this.push('root');
+  }
+
+  public end() {
+    this.pop();
+  }
+
+  public printResults() {
+    const results = Array.from(this._locationInfos.entries()); //.sort((a, b) => (a[0] == 'root' ? 1 : a[0].length - b[0].length));
+
+    for (const [name, { totalTime }] of results) {
+      console.log('%c[' + (name === 'root' ? '*' : name.replace('root/', '')) + ']%c took %c' + totalTime.toFixed(2) + 'ms%c', 'color: blue;', 'color: reset;', 'color: yellow;', 'color: reset;');
+    }
+
+    this._locationInfos.clear();
+  }
+
+  public push(location: string) {
+    if (this._fullPath.length > 0) {
+      this._fullPath += '/';
+    }
+
+    this._fullPath += location;
+    this._path.push(this._fullPath);
+    this._timeInfos.push(performance.now());
+    this._currentInfo = undefined;
+  }
+
+  public pop() {
+    const now = performance.now();
+    const last = this._timeInfos.pop()!;
+    this._path.pop();
+    const taken = now - last;
+    const info = this.getCurrentInfo();
+    info.totalTime += taken;
+
+    this._fullPath = this._path.length === 0 ? '' : this._path[this._path.length - 1];
+
+    this._currentInfo = undefined;
+  }
+
+  private getCurrentInfo() {
+    if (this._currentInfo == null) {
+      if (!this._locationInfos.has(this._fullPath)) {
+        const info = {
+          totalTime: 0
+        };
+        this._locationInfos.set(this._fullPath, info);
+        this._currentInfo = info;
+      } else {
+        this._currentInfo = this._locationInfos.get(this._fullPath)!;
+      }
+    }
+
+    return this._currentInfo;
+  }
 }
 
-function profilerPop() {
-  const taken = performance.now() - _PROFILER.entries[_PROFILER.last];
-  console.log(_PROFILER.last + ' took ' + taken.toFixed(2) + 'ms');
-  _PROFILER.entries[_PROFILER.last] = taken;
-  _PROFILER.last = '';
-}
-
-function profilerAll() {
-  const n = Object.values(_PROFILER.entries);
-  if (n.length == 0) return;
-
-  console.log('Total: ' + n.reduce((pv, cv) => pv + cv).toFixed(2) + 'ms');
-  _PROFILER.entries = {};
-}
+const profiler = new Profiler();
 
 export type MCPEVersion = `MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
 export type MCPEVersionWithComparision<T extends string> = `${T}${MCPEVersion}`;
@@ -39,7 +84,7 @@ export interface ConfigProfile {
 }
 
 export interface PackConfig {
-  targetVersion: `MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
+  targetVersion: string; //`MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
   profiles?: ConfigProfile[];
 }
 
@@ -47,6 +92,7 @@ type DefineType = 'constant' | 'function';
 type Define = {
   name: string;
   value: string | number;
+  cachedRegex?: RegExp;
 } & (
   | {
       type: 'constant';
@@ -133,7 +179,7 @@ class DefineContext {
 function translateToJson(content: string) {
   return content
     .replace(/\r\n/gm, '\n')
-    .replace(/(?!({[\n ]*))[a-zA-Z_0-9|$\:.@]+ = /gm, (a, b, c, d) => {
+    .replace(/(?!({[\n ]*))[a-zA-Z_+0-9|$\:.@]+ = /gm, (a, b, c, d) => {
       return '"' + a.substring(0, a.indexOf('=')).trim() + '": ';
     })
     .replace(/(?<=^[ ]*)#.+/gm, (a) => {
@@ -184,7 +230,11 @@ class Preprocessor {
 
     for (const define of this._context) {
       if (define.type == 'function') {
-        const rg = new RegExp('\\b' + define.name + '\\([a-z.A-Z0-9]+\\s*(\\s*,\\s*[a-zA-Z.0-9]+){0,}\\)');
+        const rg = define.cachedRegex == null ? new RegExp('\\b' + define.name + '\\([a-z-+.A-Z0-9]+\\s*(\\s*,\\s*[a-zA-Z.0-9]+){0,}\\)') : define.cachedRegex;
+        if (!define.cachedRegex) {
+          define.cachedRegex = rg;
+        }
+
         line = line.replace(rg, (a) => {
           const args = a
             .substring(a.indexOf('(') + 1, a.indexOf(')'))
@@ -206,13 +256,18 @@ class Preprocessor {
           return m;
         });
       } else {
-        line = line.replace(new RegExp('\\b' + define.name), define.value + '');
+        const rg = define.cachedRegex == null ? new RegExp('\\b' + define.name) : define.cachedRegex;
+        if (!define.cachedRegex) {
+          define.cachedRegex = rg;
+        }
+        line = line.replace(rg, define.value + '');
       }
     }
     return line;
   }
 
   public process(content: string): [true, string] | [false, undefined] {
+    profiler.push('process_content');
     this.reset();
 
     const lines = content.replaceAll('\r\n', '\n').split('\n');
@@ -247,14 +302,14 @@ class Preprocessor {
         const defineName = trimmedLine.substring(8).split(' ')[0];
         const defineValue = trimmedLine.substring(8).split(' ').slice(1).join(' ');
         this._context.add(createDefine(defineName, this.processLine(defineValue)));
-      } else if (trimmedLine.startsWith('#definefunc')) {
+      } else if (this.canProcess() && trimmedLine.startsWith('#definefunc')) {
         const defineName = trimmedLine.substring(12).substring(0, trimmedLine.indexOf(')', 12) - 11);
         const args = defineName
           .substring(defineName.indexOf('(') + 1, defineName.indexOf(')'))
           .split(',')
           .map((it) => it.trim());
         this._context.add(createDefineFunc(defineName.substring(0, defineName.indexOf('(')), args, trimmedLine.substring(trimmedLine.indexOf(')') + 1).trim()));
-      } else if (trimmedLine.startsWith('#undef')) {
+      } else if (this.canProcess() && trimmedLine.startsWith('#undef')) {
         const defineName = trimmedLine.substring(7);
         if (this._context.has(defineName)) {
           this._context.remove(defineName);
@@ -262,7 +317,7 @@ class Preprocessor {
       } else if (trimmedLine.startsWith('#exclude')) {
         this._excluding = true;
       } else if (trimmedLine.startsWith('#endexclude')) {
-      } else if (trimmedLine.startsWith('#include ')) {
+      } else if (this.canProcess() && trimmedLine.startsWith('#include ')) {
         const includeFile = trimmedLine.split(' ').slice(1).join(' ').slice(1, -1);
         const tempPreprocessor = new Preprocessor(this._parentContext);
         tempPreprocessor.process(Deno.readTextFileSync(resolve('pack/include', includeFile)));
@@ -311,6 +366,7 @@ class Preprocessor {
       }
     }
 
+    profiler.pop();
     return [true, result.join('\n')];
   }
 }
@@ -435,6 +491,7 @@ async function main() {
   const preprocessor = new Preprocessor(rootContext);
 
   if (getMCPEVersionNumerically(config.targetVersion) < getMCPEVersionNumerically('MCPE_0_16')) {
+    profiler.start();
     const minecraftAppData = profile?.minecraftAppData!;
 
     if (existsSync('out')) {
@@ -477,7 +534,7 @@ async function main() {
       Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
     }
 
-    profilerPush('Process lang files');
+    profiler.push('process_lang');
     for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
 
@@ -498,18 +555,18 @@ async function main() {
 
       Deno.writeTextFileSync(resolve(minecraftAppData, langPath + '/' + code + '-pocket.lang'), vani);
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process image files');
+    profiler.push('process_image');
     for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
       if (!entry.path.endsWith('.png')) continue;
       const filename = relative('pack/textures/custom', entry.path);
       ensureDirSync(resolve(minecraftAppData, 'images/out', dirname(filename)));
       Deno.copyFileSync(entry.path, resolve(minecraftAppData, 'images/out', filename));
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process ui/default files');
+    profiler.push('process_ui_default');
     for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
       const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
@@ -519,9 +576,9 @@ async function main() {
 
       Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process ui/custom files');
+    profiler.push('process_ui_custom');
     if (existsSync(resolve(minecraftAppData, 'ui', 'out'))) {
       Deno.removeSync(resolve(minecraftAppData, 'ui', 'out'), { recursive: true });
     }
@@ -536,9 +593,9 @@ async function main() {
       ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
       Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', 'out', filename), content!);
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process root files');
+    profiler.push('process_root');
     for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
       let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
@@ -552,9 +609,10 @@ async function main() {
 
       Deno.writeTextFileSync(resolve(minecraftAppData, filename), resultContent!);
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerAll();
+    profiler.end();
+    profiler.printResults();
 
     if (Deno.args.includes('-w')) {
       const watcher = Deno.watchFs('pack');
@@ -564,11 +622,13 @@ async function main() {
       });
 
       const handleEvent = debounce((event: Deno.FsEvent) => {
+        profiler.start();
+
         const entryPath = relative('pack', event.paths[0]);
         const entryDirname = dirname(entryPath).replaceAll('\\', '/');
 
         if (entryDirname == '.') {
-          profilerPush('Root files changed');
+          profiler.push('root_changed');
           for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
             let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
@@ -582,9 +642,9 @@ async function main() {
 
             Deno.writeTextFileSync(resolve(minecraftAppData, filename), resultContent!);
           }
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('langs')) {
-          profilerPush('langs files changed');
+          profiler.push('langs_changed');
 
           for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
@@ -607,9 +667,9 @@ async function main() {
             Deno.writeTextFileSync(resolve(minecraftAppData, langPath + '/' + code + '-pocket.lang'), vani);
           }
 
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('textures/custom')) {
-          profilerPush('textures/custom files changed');
+          profiler.push('textures_custom_changed');
 
           if (!existsSync(resolve(minecraftAppData, 'images/out'))) {
             Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
@@ -625,9 +685,9 @@ async function main() {
             Deno.copyFileSync(entry.path, resolve(minecraftAppData, 'images/out', filename));
           }
 
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('ui/custom')) {
-          profilerPush('ui/custom files changed');
+          profiler.push('ui_custom_changed');
           if (existsSync(minecraftAppData + '/ui/out')) {
             Deno.removeSync(minecraftAppData + '/ui/out', { recursive: true });
           }
@@ -642,9 +702,9 @@ async function main() {
             ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
             Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', 'out', filename), content!);
           }
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('ui/default')) {
-          profilerPush('ui/default files changed');
+          profiler.push('ui_default_changed');
           copySync(resolve(minecraftAppData, 'ui_backup'), resolve(minecraftAppData, 'ui'), { overwrite: true });
           for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
@@ -655,10 +715,12 @@ async function main() {
 
             Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
           }
-          profilerPop();
+          profiler.pop();
         }
 
-        profilerAll();
+        profiler.end();
+        console.clear();
+        profiler.printResults();
       }, 200);
 
       for await (const event of watcher) {
@@ -666,13 +728,17 @@ async function main() {
       }
     }
   } else {
+    profiler.start();
     const resourcePackPath = profile?.resourcePackPath!;
 
+    profiler.push('Setting default defines');
     rootContext.add(createDefine('DEFAULT_TEXTURES_PATH', 'textures'));
     rootContext.add(createDefine('CUSTOM_TEXTURES_PATH', 'assets'));
     rootContext.add(createDefine('CUSTOM_UI_PATH', 'ui/out'));
     rootContext.add(createDefine('DEFAULT_ENTRIES', ''));
+    profiler.pop();
 
+    profiler.push('Ensuring rp folder');
     if (existsSync(resourcePackPath)) {
       Deno.removeSync(resourcePackPath, { recursive: true });
     }
@@ -682,13 +748,16 @@ async function main() {
       Deno.removeSync('out');
     }
     Deno.symlinkSync(resourcePackPath, 'out');
+    profiler.pop();
 
+    profiler.push('Ensuring required rp subfolder');
     ensureDirSync(resolve(resourcePackPath, 'assets'));
     ensureDirSync(resolve(resourcePackPath, 'texts'));
     ensureDirSync(resolve(resourcePackPath, 'textures'));
     ensureDirSync(resolve(resourcePackPath, 'ui'));
+    profiler.pop();
 
-    profilerPush('Process lang files');
+    profiler.push('process_lang');
     for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
 
@@ -706,59 +775,81 @@ async function main() {
 
       Deno.writeTextFileSync(resolve(resourcePackPath, 'texts', `${code}.lang`), vani);
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process image files');
+    profiler.push('process_image');
     for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
       if (!entry.path.endsWith('.png')) continue;
       const filename = relative('pack/textures/custom', entry.path);
       ensureDirSync(resolve(resourcePackPath, 'assets', dirname(filename)));
       Deno.copyFileSync(entry.path, resolve(resourcePackPath, 'assets', filename));
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process ui/default files');
+    profiler.push('process_ui_default');
     for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
       const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
       let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
       if (!success) continue;
+
+      profiler.push('jsonui_to_json');
       if (isJSONUI) content = translateToJson(content!);
+      profiler.pop();
 
+      profiler.push('writing');
       Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
+      profiler.pop();
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerPush('Process ui/custom files');
+    profiler.push('process_ui_custom');
+
+    profiler.push('cleaning_up');
     if (existsSync(resolve(resourcePackPath, 'ui', 'out'))) {
       Deno.removeSync(resolve(resourcePackPath, 'ui', 'out'), { recursive: true });
     }
+    profiler.pop();
 
     for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
       const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
       let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
       if (!success) continue;
+      profiler.push('jsonui_to_json');
       if (isJSONUI) content = translateToJson(content!);
+      profiler.pop();
 
+      profiler.push('ensuring_parent_dir');
       ensureDirSync(resolve(resourcePackPath, 'ui', 'out', dirname(filename)));
-      Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', 'out', filename), content!);
-    }
-    profilerPop();
+      profiler.pop();
 
-    profilerPush('Process root files');
+      profiler.push('writing');
+      Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', 'out', filename), content!);
+      profiler.pop();
+    }
+    profiler.pop();
+
+    profiler.push('process_root');
     for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
       const isJSONUI = entry.path.endsWith('.jsonui');
       let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
       if (!success) continue;
+
+      profiler.push('jsonui_to_json');
       if (isJSONUI) resultContent = translateToJson(resultContent!);
+      profiler.pop();
+
       const filename = relative('pack', entry.path).replace('.jsonui', '.json');
 
+      profiler.push('writing');
       Deno.writeTextFileSync(resolve(resourcePackPath, filename), resultContent!);
+      profiler.pop();
     }
-    profilerPop();
+    profiler.pop();
 
-    profilerAll();
+    profiler.end();
+    profiler.printResults();
 
     if (Deno.args.includes('-w')) {
       const watcher = Deno.watchFs('pack');
@@ -768,11 +859,12 @@ async function main() {
       });
 
       const handleEvent = debounce((event: Deno.FsEvent) => {
+        profiler.start();
         const entryPath = relative('pack', event.paths[0]);
         const entryDirname = dirname(entryPath).replaceAll('\\', '/');
 
         if (entryDirname == '.') {
-          profilerPush('root files changed');
+          profiler.push('root_changed');
           for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
             let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
@@ -782,9 +874,9 @@ async function main() {
 
             Deno.writeTextFileSync(resolve(resourcePackPath, filename), resultContent!);
           }
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('langs')) {
-          profilerPush('langs files changed');
+          profiler.push('langs_changed');
           for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
 
@@ -802,9 +894,9 @@ async function main() {
 
             Deno.writeTextFileSync(resolve(resourcePackPath, 'texts', `${code}.lang`), vani);
           }
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('textures/custom')) {
-          profilerPush('textures/custom files changed');
+          profiler.push('textures_custom_changed');
 
           if (existsSync(resolve(resourcePackPath, 'assets'))) {
             Deno.removeSync(resolve(resourcePackPath, 'assets'));
@@ -817,12 +909,15 @@ async function main() {
             Deno.copyFileSync(entry.path, resolve(resourcePackPath, 'assets', filename));
           }
 
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('ui/custom')) {
-          profilerPush('ui/custom files changed');
+          profiler.push('ui_custom_changed');
+
+          profiler.push('remove_old');
           if (existsSync(resolve(resourcePackPath, 'ui', 'out'))) {
             Deno.removeSync(resolve(resourcePackPath, 'ui', 'out'), { recursive: true });
           }
+          profiler.pop();
 
           for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
@@ -834,9 +929,9 @@ async function main() {
             ensureDirSync(resolve(resourcePackPath, 'ui', 'out', dirname(filename)));
             Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', 'out', filename), content!);
           }
-          profilerPop();
+          profiler.pop();
         } else if (entryDirname.startsWith('ui/default')) {
-          profilerPush('ui/default files changed');
+          profiler.push('ui_default_changed');
           for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
             const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
@@ -846,10 +941,11 @@ async function main() {
 
             Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
           }
-          profilerPop();
+          profiler.pop();
         }
 
-        profilerAll();
+        profiler.end();
+        profiler.printResults();
       }, 200);
 
       for await (const event of watcher) {

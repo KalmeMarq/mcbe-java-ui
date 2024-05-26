@@ -1,7 +1,7 @@
 {
   namespace = "start",
 
-#if MCPE_CURRENT >= MCPE_0_13
+#if MCPE_CURRENT > MCPE_0_13
   start_screen@common.base_screen = {
 #if MCPE_CURRENT >= MCPE_0_16
     $screen_content = "kmjava_title.screen_content",
@@ -81,7 +81,11 @@
     ]
   },
 
+#if MCPE_CURRENT == MCPE_0_12
   screenTrial = {
+#else
+  screen_trial = {
+#endif
     type = "screen",
     button_mappings = [
       {

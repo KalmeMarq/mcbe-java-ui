@@ -1,0 +1,15 @@
+{
+  namespace = "chest",
+
+  small_chest_screen@common.inventory_screen_common = {
+    controls = [
+      { screen_content@kmjava_chest.chest_content_screen = {} }
+    ]
+  },
+
+  large_chest_screen@common.inventory_screen_common = {
+    controls = [
+      { screen_content@kmjava_chest.large_chest_content_screen = {} }
+    ]
+  }
+}

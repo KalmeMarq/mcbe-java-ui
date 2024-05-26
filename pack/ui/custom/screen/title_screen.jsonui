@@ -206,7 +206,7 @@
     z_order = 2,
     offset = [38, 0],
 #else
-    offset = [56, 0],
+    offset = [54, 0],
     alignment = "top_left",
     layer = 2,
 #endif
@@ -221,7 +221,7 @@
 
   language_icon = {
     type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/language.png",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/language.png",
     size = [15, 15],
     uv_size = [15, 15],
     uv = [0, 0],
@@ -617,7 +617,7 @@
       { language_button@kmjava_title.language_button = { offset = [-114, 90] } },
       { settings_button@kmjava_title.settings_button = { offset = [-51, 90] } },
       { quit_button@kmjava_title.quit_button = { offset = [51, 90] } },
-      { buy_game_button@kmjava_title.buy_game_button = { offset = [0, 100] } }
+      { buy_game_button@kmjava_title.buy_game_button = { offset = [0, 114] } }
     ]
   },
 

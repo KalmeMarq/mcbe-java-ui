@@ -1,0 +1,261 @@
+#include "helpers.jsonui"
+{
+  namespace = "kmjava_language_choice",
+
+  screen_background = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/menu_background.png",
+    LAYER_PROP(-10),
+    uv = [0, 0],
+    uv_size = [16, 16]
+  },
+
+  header_separator = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/header_separator.png",
+    uv = [0, 0],
+    uv_size = [32, 2],
+    size = ["100%", 2],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [0, 30]
+  },
+
+  footer_separator@kmjava_language_choice.header_separator = {
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/footer_separator.png",
+    offset = [0, "100% - 32px"]
+  },
+
+  entry_background = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/entry_background.png",
+    uv = [0, 0],
+    uv_size = [200, 20],
+    nineslice_size = 1.0,
+    size = ["100%", 18]
+  },
+
+  entry_background_highlighted@kmjava_language_choice.entry_background = {
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/entry_background_highlighted.png"
+  },
+
+  title = {
+    type = "label",
+    size = ["100%", 30],
+    alignment = "center",
+    text = "options.language",
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    shadow = true
+  },
+
+  scroller_box = {
+    type = "image",
+    nineslice_size = 1.0,
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/scroller.png",
+    uv = [0, 0],
+    uv_size = [6, 32]
+  },
+
+  scroller_background = {
+    type = "image",
+    nineslice_size = 1.0,
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/scroller_background.png",
+    uv = [0, 0],
+    uv_size = [6, 32]
+  },
+
+  language_label = {
+    type = "label",
+    size = [ "100%", "100%" ],
+    offset = [ 0, 2 ],
+    font_size = "large",
+    alignment = "center",
+    text = "#language_description",
+    anchor_from = "center",
+    anchor_to = "center",
+    shadow = true,
+    LAYER_PROP(2),
+    binding_collection_name = "#language_grid_item",
+    bindings = [
+      {
+        binding_name = "#language_description",
+        binding_type = "collection"
+      }
+    ]
+  },
+
+  language_button@common.button = {
+    anchor_from = "center",
+    anchor_to = "center",
+    size = [260, "100%"],
+    binding_collection_name = "#language_grid_item",
+    bindings = [
+      {
+        binding_name = "#default_focus_precedence",
+        binding_type = "collection"
+      }
+    ],
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_language_choice",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_language_choice",
+        condition = "focus"
+      }
+    ],
+    controls = [
+      {
+        focus@kmjava_language_choice.entry_background = {
+          binding_collection_name = "#language_grid_item",
+          bindings = [
+            {
+              binding_name = "#choice_indicator_rectangle_visibility",
+              binding_name_override = "#visible",
+              binding_type = "collection"
+            }
+          ]
+        }
+      },
+      { default@kmjava_language_choice.language_label = {} },
+      {
+        hover@kmjava_language_choice.entry_background_highlighted = {
+          controls = [
+            { label@kmjava_language_choice.language_label = {} }
+          ]
+        }
+      },
+      {
+        pressed@kmjava_language_choice.entry_background_highlighted = {
+          controls = [
+            { label@kmjava_language_choice.language_label = {} }
+          ]
+        }
+      }
+    ]
+  },
+
+  language_grid_item = {
+    type = "grid_item",
+    anchor_from = "center",
+    anchor_to = "center",
+    size = ["100%", 18],
+    controls = [
+      { button@kmjava_language_choice.language_button = {} }
+    ]
+  },
+
+  language_list_grid = {
+    type = "grid",
+    grid_item_template = "kmjava_language_choice.language_grid_item",
+    grid_dimension_binding = "#language_grid_dimension",
+    anchor_to = "top_left",
+    anchor_from = "top_left",
+    size = ["100%", "100%"],
+    bindings = [
+      {
+        binding_name = "#language_grid_dimension",
+        binding_type = "global"
+      }
+    ]
+  },
+
+  scroller@common.scroll = {
+    size = ["6px", "100%" ],
+    anchor_from = "top_right",
+    anchor_to = "top_right",
+    offset = ["-50% + 140px", 0],
+    scrollbar_box = "box",
+    content_panel = "language_list",
+    controls = [
+      { scroller_bg@kmjava_language_choice.scroller_background = {} },
+      {
+        box@common.scroll_box = {
+          anchor_to = "top_left",
+          size = ["6px", "100%"],
+          anchor_from = "top_left",
+          controls = [
+            { scroller_box@kmjava_language_choice.scroller_box = {} }
+          ]
+        }
+      }
+    ]
+  },
+
+  scroll_area = {
+    type = "panel",
+    size = ["100%", "100% - 64px"],
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    offset = [0, 32],
+    clips_children = true,
+    controls = [
+      { scroller@kmjava_language_choice.scroller = {} },
+      { language_list@kmjava_language_choice.language_list_grid = {} }
+    ]
+  },
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      {
+        menu_background = {
+          type = "custom",
+          renderer = "menu_background_renderer",
+          LAYER_PROP(-17)
+        }
+      },
+      { bg@kmjava_language_choice.screen_background = {} },
+      { scroll_area@kmjava_language_choice.scroll_area = {} },
+      { header_separator@kmjava_language_choice.header_separator = {} },
+      { footer_separator@kmjava_language_choice.footer_separator = {} },
+      { title@kmjava_language_choice.title = {} },
+      {
+        done@kmjava_button.button = {
+          anchor_from = "top_left",
+          anchor_to = "top_left",
+          offset = ["50% - 100px", "100% - 26px"],
+          button_mappings = [
+            {
+              from_button_id = "button.menu_select",
+              to_button_id = "button.menu_exit",
+              condition = "hover"
+            },
+            {
+              from_button_id = "button.menu_ok",
+              to_button_id = "button.menu_exit",
+              condition = "focus"
+            }
+          ],
+          controls = [
+            {
+              default@kmjava_button.button_default_background = {
+                controls = [
+                  { text@kmjava_button.button_text = { text = "gui.back" } }
+                ]
+              }
+            },
+            {
+              hover@kmjava_button.button_hover_background = {
+                controls = [
+                  { text@kmjava_button.button_text = { text = "gui.back" } }
+                ]
+              }
+            },
+            {
+              pressed@kmjava_button.button_hover_background = {
+                controls = [
+                  { text@kmjava_button.button_text = { text = "gui.back" } }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ] 
+  }
+}
