@@ -2,7 +2,113 @@ import { copySync, existsSync, walkSync, ensureDirSync } from 'https://deno.land
 import { debounce } from 'https://deno.land/std@0.224.0/async/mod.ts';
 import { resolve, relative, dirname } from 'https://deno.land/std@0.224.0/path/mod.ts';
 import jsep from 'npm:jsep@1.3.8';
+import jsepNumbers from 'npm:@jsep-plugin/numbers@1.0.1';
+import jsepTemplate from 'npm:@jsep-plugin/template@1.0.4';
+import jsepArrow from 'npm:@jsep-plugin/arrow@1.0.5';
 import { JSONC } from 'https://deno.land/x/jsonc_parser@v0.0.1/mod.ts';
+
+jsep.plugins.register(jsepNumbers);
+jsep.plugins.register(jsepTemplate);
+jsep.plugins.register(jsepArrow);
+
+jsep.addBinaryOp('**', 11, true);
+jsep.addBinaryOp('^', 10);
+
+// TODO: Better watch mode
+
+interface ExpressionHandler {
+  onCall(name: string, args: any[]): any;
+  onIdentifier(name: string): any;
+  evalValue(value: any): any;
+  withContext(context: DefineContext): ExpressionHandler;
+  [key: string]: any;
+}
+
+function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): any {
+  if (expression.type === 'Literal') {
+    return { result: expression.value };
+  } else if (expression.type == 'Identifier') {
+    return handler.onIdentifier(expression.name as string);
+  } else if (expression.type == 'UnaryExpression') {
+    const arg = handler.evalValue(jsepEval(expression.argument as jsep.Expression, handler));
+
+    switch (expression.operator) {
+      case '+':
+        return { result: +arg };
+      case '-':
+        return { result: -arg };
+      case '~':
+        return { result: ~arg };
+      case '!':
+        return { result: ~arg };
+      default:
+        throw new Error('jsep: Unknown operator ' + expression.operator);
+    }
+  } else if (expression.type == 'CallExpression') {
+    const name = jsepEval(expression.callee as jsep.Expression, handler).result;
+    const args = (expression as jsep.CallExpression).arguments.map((arg) => jsepEval(arg, handler));
+
+    return handler.onCall(name, args);
+  } else if (expression.type == 'ConditionalExpression') {
+    const test = handler.evalValue(jsepEval(expression.test as jsep.Expression, handler));
+
+    return test ? jsepEval(expression.consequent as jsep.Expression, handler) : jsepEval(expression.alternate as jsep.Expression, handler);
+  } else if (expression.type == 'BinaryExpression') {
+    const left = handler.evalValue(jsepEval(expression.left as jsep.Expression, handler));
+    const right = handler.evalValue(jsepEval(expression.right as jsep.Expression, handler));
+
+    switch (expression.operator) {
+      case '+':
+        return { result: left + right };
+      case '-':
+        return { result: left - right };
+      case '*':
+        return { result: left * right };
+      case '/':
+        return { result: left / right };
+      case '>>':
+        return { result: left >> right };
+      case '>>>':
+        return { result: left >>> right };
+      case '<<':
+        return { result: left << right };
+      case '&':
+        return { result: left & right };
+      case '**':
+        return { result: left ** right };
+      case '==':
+        return { result: left == right };
+      case '!=':
+        return { result: left != right };
+      case '===':
+        return { result: left == right };
+      case '!==':
+        return { result: left == right };
+      case '>':
+        return { result: left > right };
+      case '<':
+        return { result: left < right };
+      case '>=':
+        return { result: left >= right };
+      case '<=':
+        return { result: left <= right };
+      case '%':
+        return { result: left % right };
+      case '^':
+        return { result: left ^ right };
+      case '|':
+        return { result: left ^ right };
+      case '&&':
+        return { result: left && right };
+      case '||':
+        return { result: left || right };
+      default:
+        throw new Error('jsep: Unknown operator ' + expression.operator);
+    }
+  } else {
+    return null;
+  }
+}
 
 class Profiler {
   private _locationInfos: Map<string, { totalTime: number }> = new Map();
@@ -113,7 +219,7 @@ function createDefineFunc(name: string, args: string[], value: string | number):
 
 type DynamicDefineCreator = (name: string) => [true, Define] | [false, undefined];
 
-class DefineContext {
+export class DefineContext {
   private _parent?: DefineContext;
   private _map: Map<string, Define>;
   private _dynamicCreator?: DynamicDefineCreator;
@@ -175,6 +281,57 @@ class DefineContext {
     return iter();
   }
 }
+
+const exprHandler: ExpressionHandler = {
+  context: null,
+  withContext(context: DefineContext) {
+    this.context = context;
+    return this;
+  },
+  evalValue(value: any) {
+    if ('isIdentifier' in value) {
+      return this.context.get(value.result)!.value;
+    }
+    return value.result;
+  },
+  getRandomInt(min: number, max: number) {
+    const minCeiled = Math.ceil(min);
+    const maxFloored = Math.floor(max);
+    return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
+  },
+  onCall(name, args) {
+    if (name === 'red') return { result: (this.evalValue(args[0]) >> 16) & 0xff };
+    if (name === 'green') return { result: (this.evalValue(args[0]) >> 8) & 0xff };
+    if (name === 'blue') return { result: this.evalValue(args[0]) & 0xff };
+    if (name === 'alpha') return { result: (this.evalValue(args[0]) >> 24) & 0xff };
+    if (name === 'pow') return { result: Math.pow(this.evalValue(args[0]), this.evalValue(args[1])) };
+    if (name === 'sin') return { result: Math.sin(this.evalValue(args[0])) };
+    if (name === 'cos') return { result: Math.cos(this.evalValue(args[0])) };
+    if (name === 'clamp') return { result: Math.max(this.evalValue(args[1]), Math.min(this.evalValue(args[2]), this.evalValue(args[0]))) };
+    if (name === 'floor') return { result: Math.floor(this.evalValue(args[0])) };
+    if (name === 'ceil') return { result: Math.ceil(this.evalValue(args[0])) };
+    if (name === 'min') return { result: Math.min(this.evalValue(args[0])) };
+    if (name === 'max') return { result: Math.max(this.evalValue(args[0])) };
+    if (name === 'abs') return { result: Math.abs(this.evalValue(args[0])) };
+    if (name === 'sign') return { result: Math.sign(this.evalValue(args[0])) };
+    if (name === 'random') {
+      if (args.length === 0) {
+        return { result: Math.random() };
+      } else if (args.length === 1) {
+        return { result: this.getRandomInt(0, this.evalValue(args[0])) };
+      }
+      return { result: this.getRandomInt(this.evalValue(args[0]), this.evalValue(args[1])) };
+    } else if (name === 'defined') {
+      return { result: this.context.has(args[0].result) };
+    }
+
+    return { result: undefined };
+  },
+  onIdentifier(name) {
+    if (name === 'it') return this.onIt();
+    return { result: name, isIdentifier: true };
+  }
+};
 
 function translateToJson(content: string) {
   return content
@@ -242,13 +399,15 @@ class Preprocessor {
             .map((it) => it.trim());
 
           let m = define.value + '';
+
           for (let i = 0; i < define.args.length; ++i) {
-            m = m.replace(new RegExp('##' + define.args[i] + '(\\|[/+*-]+\\s*[0-9]+)?##', 'g'), ((aa: string, bb: string) => {
+            m = m.replace(new RegExp('##' + define.args[i] + '(.+?(?=##))?##', 'g'), ((aa: string, bb: string) => {
               if (bb != null) {
-                const v = Number(args[i]);
-                const n = Number(bb.substring(2));
-                const o = bb[1];
-                return o == '/' ? v / n : o == '-' ? v - n : o == '*' ? v * n : v + n;
+                exprHandler.onIt = function () {
+                  return { result: args[i] };
+                };
+
+                return exprHandler.withContext(this._context).evalValue(jsepEval(jsep(bb.slice(1)), exprHandler));
               }
               return args[i];
             }) as any);
@@ -283,11 +442,12 @@ class Preprocessor {
           .slice(1)
           .map((it) => it.trim())
           .join(' ');
-        const value = Boolean(
-          evalJsep(jsep(expression), (name: string) => {
-            return this._context.get(name)?.value;
-          })
-        );
+        const value = Boolean(exprHandler.withContext(this._context).evalValue(jsepEval(jsep(expression), exprHandler)));
+        // Boolean(
+        //   evalJsep(jsep(expression), (name: string) => {
+        //     return this._context.get(name)?.value;
+        //   })
+        // );
 
         if (value) {
           return [false, undefined];
@@ -331,9 +491,11 @@ class Preprocessor {
           .slice(1)
           .map((it) => it.trim())
           .join(' ');
-        const value = evalJsep(jsep(expression), (name: string) => {
-          return this._context.get(name)?.value;
-        });
+        const value = exprHandler.withContext(this._context).evalValue(jsepEval(jsep(expression), exprHandler));
+        // evalJsep(jsep(expression), (name: string) => {
+        //   return this._context.get(name)?.value;
+        // });
+        // console.log(expression, value);
 
         this._ifs.push(Boolean(value) == true);
       } else if (trimmedLine.startsWith('#ifdef')) {
@@ -349,9 +511,10 @@ class Preprocessor {
           .slice(1)
           .map((it) => it.trim())
           .join(' ');
-        const value = evalJsep(jsep(expression), (name: string) => {
-          return this._context.get(name)?.value;
-        });
+        const value = exprHandler.withContext(this._context).evalValue(jsepEval(jsep(expression), exprHandler));
+        // evalJsep(jsep(expression), (name: string) => {
+        //   return this._context.get(name)?.value;
+        // });
         this._ifs[this._ifs.length - 1] = Boolean(value) == true;
       } else if (trimmedLine.startsWith('#else')) {
         this._ifs[this._ifs.length - 1] = !this._ifs[this._ifs.length - 1];
@@ -402,63 +565,6 @@ function genMCPEVersionDefineValue({ major, minor, patch }: { major: number; min
   return Number(`${major}`.padStart(3, '0') + `${minor}`.padStart(3, '0') + `${patch}`.padStart(3, '0'));
 }
 
-function evalJsep(expr: any, context: any): any {
-  if (expr.type == 'BinaryExpression') {
-    const left = evalJsep(expr.left, context);
-    const right = evalJsep(expr.right, context);
-
-    switch (expr.operator) {
-      case '+':
-        return left + right;
-      case '-':
-        return left - right;
-      case '*':
-        return left * right;
-      case '/':
-        return left / right;
-      case '\\':
-        return Math.floor(left / right);
-      case '%':
-        return left % right;
-      case '**':
-        return left % right;
-      case '>':
-        return left > right;
-      case '<':
-        return left < right;
-      case '>=':
-        return left >= right;
-      case '<=':
-        return left <= right;
-      case '==':
-        return left == right;
-      case '!=':
-        return left != right;
-      case '||':
-        return left || right;
-      case '&&':
-        return left && right;
-    }
-  } else if (expr.type == 'UnaryExpression') {
-    if (expr.operator == '+') {
-      return +evalJsep(expr.argument, context);
-    }
-    if (expr.operator == '-') {
-      return -evalJsep(expr.argument, context);
-    }
-    if (expr.operator == '!') {
-      return !evalJsep(expr.argument, context);
-    }
-  } else if (expr.type == 'Literal') {
-    return expr.value;
-  } else if (expr.type == 'Identifier') {
-    return context(expr.name);
-  }
-
-  throw new Error('Unknown ' + expr.type);
-}
-
-// TODO: Add a watch mode
 async function main() {
   const config = (await import('./pack.config.ts')).default;
 
@@ -705,6 +811,7 @@ async function main() {
           profiler.pop();
         } else if (entryDirname.startsWith('ui/default')) {
           profiler.push('ui_default_changed');
+
           copySync(resolve(minecraftAppData, 'ui_backup'), resolve(minecraftAppData, 'ui'), { overwrite: true });
           for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
             const isJSONUI = entry.path.endsWith('.jsonui');
@@ -715,16 +822,68 @@ async function main() {
 
             Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
           }
+
           profiler.pop();
         }
 
         profiler.end();
-        console.clear();
         profiler.printResults();
-      }, 200);
+      }, 0);
 
       for await (const event of watcher) {
-        handleEvent(event);
+        const entryPath = relative('pack', event.paths[0]);
+        const entryDirname = dirname(entryPath).replaceAll('\\', '/');
+
+        if (entryDirname.startsWith('ui/default')) {
+          const filename = relative(resolve('pack/ui/default'), event.paths[0]).replace('.jsonui', '.json');
+          const endPath = resolve(minecraftAppData, 'ui', filename);
+
+          if (event.kind == 'modify') {
+            if (!existsSync(event.paths[0])) {
+              Deno.removeSync(endPath);
+
+              if (existsSync(resolve(minecraftAppData, 'ui_backup', filename))) {
+                Deno.copyFileSync(resolve(minecraftAppData, 'ui_backup', filename), endPath);
+              }
+            } else if (!Deno.statSync(event.paths[0]).isDirectory) {
+              const isJSONUI = event.paths[0].endsWith('.jsonui');
+
+              let [success, content] = preprocessor.process(Deno.readTextFileSync(event.paths[0]));
+              if (success) {
+                if (isJSONUI) content = translateToJson(content!);
+                Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
+              }
+            }
+          } else if (event.kind == 'remove') {
+            Deno.removeSync(endPath);
+
+            if (existsSync(resolve(minecraftAppData, 'ui_backup', filename))) {
+              Deno.copyFileSync(resolve(minecraftAppData, 'ui_backup', filename), endPath);
+            }
+          }
+        } else if (entryDirname.startsWith('ui/custom')) {
+          const filename = relative(resolve('pack/ui/custom'), event.paths[0]).replace('.jsonui', '.json');
+          const endPath = resolve(minecraftAppData, 'ui/out', filename);
+
+          if (event.kind == 'modify') {
+            if (!existsSync(event.paths[0])) {
+              Deno.removeSync(endPath);
+            } else if (!Deno.statSync(event.paths[0]).isDirectory) {
+              const isJSONUI = event.paths[0].endsWith('.jsonui');
+
+              let [success, content] = preprocessor.process(Deno.readTextFileSync(event.paths[0]));
+              if (success) {
+                if (isJSONUI) content = translateToJson(content!);
+                ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
+                Deno.writeTextFileSync(resolve(minecraftAppData, 'ui/out', filename), content!);
+              }
+            }
+          } else if (event.kind == 'remove') {
+            Deno.removeSync(endPath);
+          }
+        } else {
+          handleEvent(event);
+        }
       }
     }
   } else {
@@ -932,15 +1091,19 @@ async function main() {
           profiler.pop();
         } else if (entryDirname.startsWith('ui/default')) {
           profiler.push('ui_default_changed');
-          for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
-            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) content = translateToJson(content!);
+          // for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
+          //   const isJSONUI = entry.path.endsWith('.jsonui');
+          //   const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
+          //   let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
+          //   if (!success) continue;
+          //   if (isJSONUI) content = translateToJson(content!);
 
-            Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
+          //   Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
+          // }
+          if (event.kind == 'remove') {
+            console.log(event.paths);
           }
+
           profiler.pop();
         }
 

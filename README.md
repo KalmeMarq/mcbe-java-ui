@@ -62,29 +62,21 @@ I also use a custom format .jsonui. It's similar to json but I don't use comment
 
 ## Examples
 
-### .json
-
-```jsonc
-  //#if defined(DEBUG)
-  },
-  {
-    "a": {
-      "type": "label",
-      "text": "Hey Bruv",
-      "anchor_from": "top_left",
-      "anchor_to": "top_left",
-      "offset": [10, 20],
-      "color": "black"
-    }
-  },
-  {
-    "b@kmjava_button.button": {
-      "$button_text": "bruv"
-    }
-  //#endif
-```
-
 ### .jsonui
+
+```c
+#definefunc COLOR_RGBA(red, green, blue, alpha) [##red|it/255##, ##green|it/255##, ##blue|it/255##, ##alpha|it/255##]
+#definefunc COLOR_RGB(red, green, blue) [##red|it/255##, ##green|it/255##, ##blue|it/255##]
+
+// COLOR_HEX(0x10FFFF) -> [0.06274509803921569, 1, 1]
+#definefunc COLOR_HEX(color) [##color|((it >> 16) & 0xFF) / 255##, ##color|((it >> 8) & 0xFF) / 255##, ##color|(it & 0xFF) / 255##]
+
+#if MCPE_CURRENT < MCPE_0_13
+  #definefunc LAYER_PROP(value) z_order = ##value##
+#else
+  #definefunc LAYER_PROP(value) layer = ##value##
+#endif
+```
 
 ```c
 #define AGE 19
