@@ -1,6 +1,7 @@
 #definefunc COLOR_RGBA(red, green, blue, alpha) [##red|it/255##, ##green|it/255##, ##blue|it/255##, ##alpha|it/255##]
 #definefunc COLOR_RGB(red, green, blue) [##red|it/255##, ##green|it/255##, ##blue|it/255##]
 #definefunc COLOR_HEX(color) [##color|((it >> 16) & 0xFF) / 255##, ##color|((it >> 8) & 0xFF) / 255##, ##color|(it & 0xFF) / 255##]
+#definefunc COLOR_AHEX(color) [##color|((it >> 16) & 0xFF) / 255##, ##color|((it >> 8) & 0xFF) / 255##, ##color|(it & 0xFF) / 255##, ##color|((it >> 24) & 0xFF) / 255##]
 
 #if MCPE_CURRENT < MCPE_0_13
 #definefunc LAYER_PROP(value) z_order = ##value##

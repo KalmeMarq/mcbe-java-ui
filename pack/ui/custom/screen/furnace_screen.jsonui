@@ -1,0 +1,319 @@
+{
+  namespace = "kmjava_furnace",
+
+  container_bg = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/container/furnace.png",
+    uv = [0, 0],
+    uv_size = [176, 166],
+    size = [176, 166]
+  },
+
+  burn_progress = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/container/furnace/burn_progress.png",
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    size = [24, 16],
+    uv = [0, 0],
+    uv_size = [24, 16],
+    nineslice_size = 0.0,
+    clip_direction = "left",
+    bindings = [
+      {
+        binding_name = "#furnace_arrow_ratio",
+        binding_name_override = "#clip_ratio",
+#if MCPE_CURRENT >= MCPE_0_14
+        binding_condition = "visible"
+#endif
+      }
+    ]
+  },
+
+  lit_progress = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/container/furnace/lit_progress.png",
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    uv = [0, 0],
+    uv_size = [14, 14],
+    size = [14, 14],
+    nineslice_size = 0.0,
+    clip_direction = "down",
+    bindings = [
+      {
+        binding_name = "#furnace_flame_ratio",
+        binding_name_override = "#clip_ratio",
+#if MCPE_CURRENT >= MCPE_0_14
+        binding_condition = "visible"
+#endif
+      }
+    ]
+  },
+
+  container_title@kmjava_container.container_label = {
+    offset = [0, 6],
+    size = [1, 7],
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    alignment = "center",
+    text = "container.furnace"
+  },
+
+#if MCPE_CURRENT < MCPE_0_14
+  furnace_input_icon@common.item_renderer = {
+    binding_collection_name = "furnace_input_items",
+    bindings = [
+      {
+        binding_name = "#item_id_aux",
+        binding_type = "collection"
+      }
+    ]
+  },
+
+  furnace_input_foil@common.item_foil_renderer = {
+    binding_collection_name = "furnace_input_items",
+    bindings = [
+      {
+        binding_name = "#item_id_aux",
+        binding_type = "collection"
+      }
+    ]
+  },
+
+  furnace_input_button@common.inventory_slot_button_prototype = {
+    layer = 2,
+    binding_collection_name = "furnace_input_items",
+    controls = [
+      {
+        hover@common.highlight_slot = {
+          controls = [
+            {
+              hover_text@common.hover_text = {
+                binding_collection_name = "furnace_input_items",
+                bindings = [
+                  {
+                    binding_name = "#hover_text",
+                    binding_type = "collection"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  furnace_input_slot = {
+    type = "grid_item",
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    size = [18, 18],
+    controls = [
+      { item_icon@furnace_input_icon = { } },
+      { item_foil@furnace_input_foil = { } },
+      { slot_button@furnace_input_button = { } },
+      {
+        stack@common.stack_count_label = {
+          binding_collection_name = "furnace_input_items"
+        }
+      },
+      {
+        durability@common.durability_bar = {
+          binding_collection_name = "furnace_input_items"
+        }
+      }
+    ]
+  },
+
+  furnace_input = {
+    type = "grid",
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    size = [1, 1],
+    grid_dimensions = [1, 3]
+  },
+
+  furnace_output_button = {
+    type = "button",
+    layer = 2,
+    focus_enabled = true,
+    hover_control = "hover",
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.furnace_out_take_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.furnace_out_take_all",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_secondary_select",
+        to_button_id = "button.furnace_out_take_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_select",
+        to_button_id = "button.furnace_out_take_one",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_auto_place",
+        to_button_id = "button.furnace_out_auto_place_max",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_secondary_select",
+        to_button_id = "button.furnace_out_auto_place_max",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop",
+        to_button_id = "button.furnace_out_drop_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop_all",
+        to_button_id = "button.furnace_out_drop_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_double_select",
+        to_button_id = "button.furnace_out_coalesce_stack",
+        condition = "hover"
+      }
+    ],
+    controls = [
+      {
+        hover@common.highlight_slot = {
+          controls = [
+            {
+              hover_text@common.hover_text = {
+                bindings = [
+                  {
+                    binding_name = "#furnace_output_hover_text",
+                    binding_name_override = "#hover_text"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  furnace_output_icon@common.item_renderer = {
+    bindings = [
+      {
+        binding_name = "#furnace_output_item",
+        binding_name_override = "#item_id_aux"
+      }
+    ]
+  },
+
+  furnace_output_foil@common.item_foil_renderer = {
+    bindings = [
+      {
+        binding_name = "#furnace_output_item",
+        binding_name_override = "#item_id_aux"
+      }
+    ]
+  },
+
+  furnace_output_slot = {
+    type = "grid_item",
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    size = [18, 18],
+    controls = [
+      { item_icon@furnace_output_icon = {} },
+      { item_foil@furnace_output_foil = {} },
+      { slot_button@furnace_output_button = {} },
+      {
+        stack@common.stack_count_label = {
+          bindings = [
+            {
+              binding_name = "#furnace_output_item_stack_count",
+              binding_name_override = "#inventory_stack_count"
+            }
+          ]
+        }
+      }
+    ]
+  },
+#else
+  
+  ingredient_slot@kmjava_container.container_slot = {
+    $item_collection_name = "furnace_ingredient_items"
+  },
+
+  fuel_slot@kmjava_container.container_slot = {
+    $item_collection_name = "furnace_fuel_items"
+  },
+
+  output_slot@kmjava_container.container_slot = {
+    $item_collection_name = "furnace_output_items"
+  },
+
+#endif
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      { bg@kmjava_container.screen_background = {} },
+      {
+        root@common.root_panel = {
+          controls = [
+            { bg@kmjava_furnace.container_bg = {} },
+            { title@kmjava_furnace.container_title = {} },
+#if MCPE_CURRENT < MCPE_0_14
+            {
+              input@kmjava_furnace.furnace_input = {
+                offset = [55, 16],
+                controls = [
+                  {
+                    slot@kmjava_furnace.furnace_input_slot = {
+                      grid_position = [0, 0]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              fuel@kmjava_furnace.furnace_input = {
+                offset = [55, 52],
+                controls = [
+                  {
+                    slot@kmjava_furnace.furnace_input_slot = {
+                      offset = [0, -1],
+                      grid_position = [0, 2]
+                    }
+                  }
+                ]
+              }
+            },
+            { output@kmjava_furnace.furnace_output_slot = { offset = [115, 34] } },
+#else
+            { ingredient@kmjava_furnace.ingredient_slot = { offset = [55, 16] } },
+            { fuel@kmjava_furnace.fuel_slot = { offset = [55, 52] } },
+            { output@kmjava_furnace.output_slot = { offset = [115, 34] } },
+#endif
+            { burn_progress@kmjava_furnace.burn_progress = { offset = [79, 34] } },
+            { lit_progress@kmjava_furnace.lit_progress = { offset = [56, 36] } },
+            { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
+#if MCPE_CURRENT < MCPE_0_14
+            { @common.inventory_hold_icon_button = {} },
+            { icon@kmjava_container.inventory_selected_icon_button = {} },
+            { foil@common.inventory_selected_foil_button = {} }
+#endif
+          ]
+        }
+      }
+    ]
+  }
+}

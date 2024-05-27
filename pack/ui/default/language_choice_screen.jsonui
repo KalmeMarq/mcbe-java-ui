@@ -2,7 +2,12 @@
 {
   namespace = "language_choice",
 
+#if MCPE_CURRENT >= MCPE_0_14
+  language_choice_screen@common.base_screen = {
+    scroll_report = ["scroller"],
+#else
   screen = {
+#endif
     type = "screen",
     button_mappings = [
       {

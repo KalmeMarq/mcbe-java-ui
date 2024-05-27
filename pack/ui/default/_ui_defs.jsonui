@@ -8,6 +8,7 @@ DEFAULT_ENTRIES
 #if MCPE_CURRENT >= MCPE_0_13
     "CUSTOM_UI_PATH/container.json",
     "CUSTOM_UI_PATH/screen/chest_screen.json",
+    "CUSTOM_UI_PATH/screen/furnace_screen.json",
     "CUSTOM_UI_PATH/screen/language_choice_screen.json",
 #endif
     "CUSTOM_UI_PATH/button.json",

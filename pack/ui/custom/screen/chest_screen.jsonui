@@ -38,7 +38,8 @@
     text = "container.chest"
   },
 
-  chest_item_button@common.inventory_slot_button_prototype = {
+#if MCPE_CURRENT < MCPE_0_14
+  chest_slot_button@common.inventory_slot_button_prototype = {
     layer = 2,
     binding_collection_name = "chest_items",
     pressed_control = "pressed",
@@ -122,6 +123,11 @@
       }
     ]
   },
+#else
+  chest_grid_item@kmjava_container.container_slot_grid_item = {
+    $item_collection_name = "container_items"
+  },
+#endif
 
   small_chest_grid = {
     type = "grid",
@@ -130,7 +136,10 @@
     anchor_to = "top_left",
     offset = [7, 17],
     grid_dimensions = [9, 3],
-    grid_item_template = "kmjava_chest.chest_grid_item"
+    grid_item_template = "kmjava_chest.chest_grid_item",
+#if MCPE_CURRENT >= MCPE_0_14
+    collection_name = "container_items"
+#endif
   },
 
   large_chest_grid = {
@@ -140,7 +149,10 @@
     anchor_to = "top_left",
     offset = [7, 17],
     grid_dimensions = [9, 6],
-    grid_item_template = "kmjava_chest.chest_grid_item"
+    grid_item_template = "kmjava_chest.chest_grid_item",
+#if MCPE_CURRENT >= MCPE_0_14
+    collection_name = "container_items"
+#endif
   },
 
   chest_content_screen = {
@@ -151,13 +163,15 @@
         root@common.root_panel = {
           size = [176, 167],
           controls = [
-            { title@kmjava_chest.container_title = {} },
             { bg@kmjava_chest.small_chest_container_bg = {} },
+            { title@kmjava_chest.container_title = {} },
             { grid@kmjava_chest.small_chest_grid = {} },
             { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
+#if MCPE_CURRENT < MCPE_0_14
             { @common.inventory_hold_icon_button = {} },
             { icon@kmjava_container.inventory_selected_icon_button = {} },
             { foil@common.inventory_selected_foil_button = {} }
+#endif
           ]
         }
       }
@@ -172,13 +186,15 @@
         root@common.root_panel = {
           size = [176, 222],
           controls = [
-            { title@kmjava_chest.container_title = {} },
             { bg@kmjava_chest.large_chest_container_bg = {} },
+            { title@kmjava_chest.container_title = {} },
             { grid@kmjava_chest.large_chest_grid = {} },
             { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
+#if MCPE_CURRENT < MCPE_0_14
             { @common.inventory_hold_icon_button = {} },
             { icon@kmjava_container.inventory_selected_icon_button = {} },
             { foil@common.inventory_selected_foil_button = {} }
+#endif
           ]
         }
       }

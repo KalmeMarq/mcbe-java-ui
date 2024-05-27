@@ -1,0 +1,14 @@
+#ignore MCPE_CURRENT < MCPE_0_13
+{
+  namespace = "furnace",
+
+#if MCPE_CURRENT >= MCPE_0_14
+  furnace_screen@common.inventory_screen_common = {
+#else
+  screen@common.inventory_screen_common = {
+#endif
+    controls = [
+      { screen_content@kmjava_furnace.screen_content = {} }
+    ]
+  }
+}

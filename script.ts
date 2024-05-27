@@ -24,7 +24,7 @@ interface ExpressionHandler {
   [key: string]: any;
 }
 
-function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): any {
+function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): { result: any; isIdentifier?: boolean } {
   if (expression.type === 'Literal') {
     return { result: expression.value };
   } else if (expression.type == 'Identifier') {
@@ -105,9 +105,9 @@ function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): any 
       default:
         throw new Error('jsep: Unknown operator ' + expression.operator);
     }
-  } else {
-    return null;
   }
+
+  throw new Error('jsepEval: Unreachable code');
 }
 
 class Profiler {
@@ -310,8 +310,8 @@ const exprHandler: ExpressionHandler = {
     if (name === 'clamp') return { result: Math.max(this.evalValue(args[1]), Math.min(this.evalValue(args[2]), this.evalValue(args[0]))) };
     if (name === 'floor') return { result: Math.floor(this.evalValue(args[0])) };
     if (name === 'ceil') return { result: Math.ceil(this.evalValue(args[0])) };
-    if (name === 'min') return { result: Math.min(this.evalValue(args[0])) };
-    if (name === 'max') return { result: Math.max(this.evalValue(args[0])) };
+    if (name === 'min') return { result: Math.min(...args.map((arg) => this.evalValue(arg))) };
+    if (name === 'max') return { result: Math.max(...args.map((arg) => this.evalValue(arg))) };
     if (name === 'abs') return { result: Math.abs(this.evalValue(args[0])) };
     if (name === 'sign') return { result: Math.sign(this.evalValue(args[0])) };
     if (name === 'random') {
@@ -344,18 +344,6 @@ function translateToJson(content: string) {
     });
 }
 
-function translateToJsonUI(content: string) {
-  return content
-    .replace(/\r\n/gm, '\n')
-    .replace(/\/\/#.+/g, (a) => a.substring(2))
-    .replace(/".+"\s*:\s* /gm, (a) =>
-      a
-        .substring(1)
-        .trim()
-        .replace(/"\s*:\s*/, ' = ')
-    );
-}
-
 class Preprocessor {
   private _parentContext?: DefineContext;
   private _context: DefineContext;
@@ -380,6 +368,7 @@ class Preprocessor {
     return this._context;
   }
 
+  // TODO: Make this shiz readable
   private processLine(line: string): string {
     line = line.replace(/MCPE_(?<major>\d{1,3})_(?<minor>\d{1,3})(_(?<patch>\d{1,3}))?/gm, (a) => {
       return this._context.get(a)!.value + '';
@@ -443,12 +432,6 @@ class Preprocessor {
           .map((it) => it.trim())
           .join(' ');
         const value = Boolean(exprHandler.withContext(this._context).evalValue(jsepEval(jsep(expression), exprHandler)));
-        // Boolean(
-        //   evalJsep(jsep(expression), (name: string) => {
-        //     return this._context.get(name)?.value;
-        //   })
-        // );
-
         if (value) {
           return [false, undefined];
         }
@@ -492,11 +475,6 @@ class Preprocessor {
           .map((it) => it.trim())
           .join(' ');
         const value = exprHandler.withContext(this._context).evalValue(jsepEval(jsep(expression), exprHandler));
-        // evalJsep(jsep(expression), (name: string) => {
-        //   return this._context.get(name)?.value;
-        // });
-        // console.log(expression, value);
-
         this._ifs.push(Boolean(value) == true);
       } else if (trimmedLine.startsWith('#ifdef')) {
         const defineName = trimmedLine.substring(8);
@@ -512,9 +490,6 @@ class Preprocessor {
           .map((it) => it.trim())
           .join(' ');
         const value = exprHandler.withContext(this._context).evalValue(jsepEval(jsep(expression), exprHandler));
-        // evalJsep(jsep(expression), (name: string) => {
-        //   return this._context.get(name)?.value;
-        // });
         this._ifs[this._ifs.length - 1] = Boolean(value) == true;
       } else if (trimmedLine.startsWith('#else')) {
         this._ifs[this._ifs.length - 1] = !this._ifs[this._ifs.length - 1];
@@ -530,7 +505,13 @@ class Preprocessor {
     }
 
     profiler.pop();
-    return [true, result.join('\n')];
+    return [
+      true,
+      result
+        .join('\n')
+        .replace(/,(?=[\n\r ]*(\]|\}))/gm, '')
+        .replace(/\n\n\n/gm, '\n\n')
+    ];
   }
 }
 
@@ -565,6 +546,8 @@ function genMCPEVersionDefineValue({ major, minor, patch }: { major: number; min
   return Number(`${major}`.padStart(3, '0') + `${minor}`.padStart(3, '0') + `${patch}`.padStart(3, '0'));
 }
 
+// TOOD: Fix this shiz up
+
 async function main() {
   const config = (await import('./pack.config.ts')).default;
 
@@ -593,6 +576,8 @@ async function main() {
     return [false, undefined];
   });
   rootContext.add(createDefine('MCPE_CURRENT', getMCPEVersionNumerically(config.targetVersion)));
+
+  console.log('Targetting ' + config.targetVersion);
 
   const preprocessor = new Preprocessor(rootContext);
 
@@ -1091,19 +1076,15 @@ async function main() {
           profiler.pop();
         } else if (entryDirname.startsWith('ui/default')) {
           profiler.push('ui_default_changed');
-          // for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
-          //   const isJSONUI = entry.path.endsWith('.jsonui');
-          //   const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
-          //   let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-          //   if (!success) continue;
-          //   if (isJSONUI) content = translateToJson(content!);
+          for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
+            const isJSONUI = entry.path.endsWith('.jsonui');
+            const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
+            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
+            if (!success) continue;
+            if (isJSONUI) content = translateToJson(content!);
 
-          //   Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
-          // }
-          if (event.kind == 'remove') {
-            console.log(event.paths);
+            Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
           }
-
           profiler.pop();
         }
 

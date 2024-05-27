@@ -68,14 +68,26 @@
   language_label = {
     type = "label",
     size = [ "100%", "100%" ],
+#if MCPE_CURRENT < MCPE_0_14
     offset = [ 0, 2 ],
     font_size = "large",
+#endif
     alignment = "center",
     text = "#language_description",
     anchor_from = "center",
     anchor_to = "center",
     shadow = true,
     LAYER_PROP(2),
+#if MCPE_CURRENT >= MCPE_0_14
+    bindings = [
+      {
+        binding_name = "#language_description",
+        binding_type = "collection",
+        binding_condition = "visible",
+        binding_collection_name = "languages"
+      }
+    ]
+#else
     binding_collection_name = "#language_grid_item",
     bindings = [
       {
@@ -83,12 +95,29 @@
         binding_type = "collection"
       }
     ]
+#endif
   },
 
   language_button@common.button = {
     anchor_from = "center",
     anchor_to = "center",
     size = [260, "100%"],
+#if MCPE_CURRENT >= MCPE_0_14
+    $pressed_button_name = "button.menu_language_choice",
+    bindings = [
+      {
+        binding_type = "collection_details",
+        binding_condition = "visible",
+        binding_collection_name = "languages"
+      },
+      {
+        binding_name = "#default_focus_precedence",
+        binding_type = "collection",
+        binding_condition = "visible",
+        binding_collection_name = "languages"
+      }
+    ],
+#else
     binding_collection_name = "#language_grid_item",
     bindings = [
       {
@@ -108,12 +137,18 @@
         condition = "focus"
       }
     ],
+#endif
     controls = [
       {
         focus@kmjava_language_choice.entry_background = {
+#if MCPE_CURRENT < MCPE_0_14
           binding_collection_name = "#language_grid_item",
+#endif
           bindings = [
             {
+#if MCPE_CURRENT >= MCPE_0_14
+              binding_collection_name = "languages",
+#endif
               binding_name = "#choice_indicator_rectangle_visibility",
               binding_name_override = "#visible",
               binding_type = "collection"
@@ -156,14 +191,25 @@
     anchor_to = "top_left",
     anchor_from = "top_left",
     size = ["100%", "100%"],
+#if MCPE_CURRENT >= MCPE_0_14
+    collection_name = "languages",
+    bindings = [
+      {
+        binding_name = "#language_grid_dimension",
+        binding_condition = "visible"
+      }
+    ]
+#else
     bindings = [
       {
         binding_name = "#language_grid_dimension",
         binding_type = "global"
       }
     ]
+#endif
   },
 
+#if MCPE_CURRENT < MCPE_0_14
   scroller@common.scroll = {
     size = ["6px", "100%" ],
     anchor_from = "top_right",
@@ -185,6 +231,7 @@
       }
     ]
   },
+#endif
 
   scroll_area = {
     type = "panel",
@@ -194,8 +241,19 @@
     offset = [0, 32],
     clips_children = true,
     controls = [
+#if MCPE_CURRENT >= MCPE_0_14
+      {
+        scrolling@common.scrolling_panel = {
+          $scrolling_pane_size = [ "100%", "100%" ],
+          $scrolling_content = "kmjava_language_choice.language_list_grid",
+          $scroll_pane_name = "scroller",
+          $show_background = false
+        }
+      },
+#else
       { scroller@kmjava_language_choice.scroller = {} },
       { language_list@kmjava_language_choice.language_list_grid = {} }
+#endif
     ]
   },
 
@@ -219,6 +277,10 @@
           anchor_from = "top_left",
           anchor_to = "top_left",
           offset = ["50% - 100px", "100% - 26px"],
+#if MCPE_CURRENT >= MCPE_0_14
+          $button_text = "gui.back",
+          $pressed_button_name = "button.menu_exit"
+#else
           button_mappings = [
             {
               from_button_id = "button.menu_select",
@@ -254,6 +316,7 @@
               }
             }
           ]
+#endif
         }
       }
     ] 
