@@ -1,5 +1,5 @@
-#definefunc COLOR_RGBA(red, green, blue, alpha) [##red / 255##, ##green / 255##, ##blue / 255##, ##alpha / 255##]
-#definefunc COLOR_RGB(red, green, blue) [##red / 255##, ##green / 255##, ##blue /255##]
+#define COLOR_RGBA(red, green, blue, alpha) [##red / 255##, ##green / 255##, ##blue / 255##, ##alpha / 255##]
+#define COLOR_RGB(red, green, blue) [##red / 255##, ##green / 255##, ##blue /255##]
 
-#definefunc COLOR_HEX(color) [##((color >> 16) & 0xFF) / 255##, ##((color >> 8) & 0xFF) / 255##, ##color|(color & 0xFF) / 255##]
-#definefunc COLOR_AHEX(color) [##((color >> 16) & 0xFF) / 255##, ##((color >> 8) & 0xFF) / 255##, ##(color & 0xFF) / 255##, ##((color >> 24) & 0xFF) / 255##]
+#define COLOR_HEX(color) [##((color >> 16) & 0xFF) / 255##, ##((color >> 8) & 0xFF) / 255##, ##color|(color & 0xFF) / 255##]
+#define COLOR_AHEX(color) [##((color >> 16) & 0xFF) / 255##, ##((color >> 8) & 0xFF) / 255##, ##(color & 0xFF) / 255##, ##((color >> 24) & 0xFF) / 255##]

@@ -1,6 +1,6 @@
 #if MCPE_CURRENT < MCPE_0_14
 
-#definefunc BUTTON_MAPPINGS_NAME(pressedButtonName) button_mappings = [ \
+#define BUTTON_MAPPINGS_NAME(pressedButtonName) button_mappings = [ \
       { \
         from_button_id = "button.menu_select", \
         to_button_id = ##pressedButtonName##, \
@@ -13,7 +13,7 @@
       } \
     ]
 
-#definefunc BUTTON_CONTROLS_WITH_TEXT(text) controls = [ \
+#define BUTTON_CONTROLS_WITH_TEXT(text) controls = [ \
       { \
         default@kmjava_button.button_default_background = { \
           controls = [ \
@@ -37,7 +37,7 @@
       } \
     ]
 
-#definefunc BUTTON_98_CONTROLS_WITH_TEXT(text) controls = [ \
+#define BUTTON_98_CONTROLS_WITH_TEXT(text) controls = [ \
       { \
         default = { \
           type = "panel", \

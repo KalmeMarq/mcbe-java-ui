@@ -1,11 +1,11 @@
 #if MCPE_CURRENT < MCPE_0_13
-  #definefunc LAYER_PROP(value) z_order = ##value##
+  #define LAYER_PROP(value) z_order = ##value##
 #else
-  #definefunc LAYER_PROP(value) layer = ##value##
+  #define LAYER_PROP(value) layer = ##value##
 #endif
 
-#definefunc MUL(left, right) ##left * right##
-#definefunc DIV(left, right) ##left / right##
-#definefunc ADD(left, right) ##left + right##
-#definefunc SUB(left, right) ##left - right##
-#definefunc Q(value) "##value##"
+#define MUL(left, right) ##left * right##
+#define DIV(left, right) ##left / right##
+#define ADD(left, right) ##left + right##
+#define SUB(left, right) ##left - right##
+#define Q(value) "##value##"
