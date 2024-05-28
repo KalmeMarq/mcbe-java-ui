@@ -97,7 +97,7 @@ function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): { re
       case '^':
         return { result: left ^ right };
       case '|':
-        return { result: left ^ right };
+        return { result: left | right };
       case '&&':
         return { result: left && right };
       case '||':
@@ -344,7 +344,7 @@ function translateToJson(content: string) {
     });
 }
 
-class Preprocessor {
+export class Preprocessor {
   private _parentContext?: DefineContext;
   private _context: DefineContext;
   private _excluding = false;
@@ -376,7 +376,7 @@ class Preprocessor {
 
     for (const define of this._context) {
       if (define.type == 'function') {
-        const rg = define.cachedRegex == null ? new RegExp('\\b' + define.name + '\\([a-z-+.A-Z0-9]+\\s*(\\s*,\\s*[a-zA-Z.0-9]+){0,}\\)') : define.cachedRegex;
+        const rg = define.cachedRegex == null ? new RegExp('\\b' + define.name + '\\(([a-z-+.A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")\\s*(\\s*,\\s*[a-zA-Z.0-9]+){0,}\\)') : define.cachedRegex;
         if (!define.cachedRegex) {
           define.cachedRegex = rg;
         }
@@ -389,18 +389,28 @@ class Preprocessor {
 
           let m = define.value + '';
 
+          const funcContext = new DefineContext(this._context);
           for (let i = 0; i < define.args.length; ++i) {
-            m = m.replace(new RegExp('##' + define.args[i] + '(.+?(?=##))?##', 'g'), ((aa: string, bb: string) => {
-              if (bb != null) {
-                exprHandler.onIt = function () {
-                  return { result: args[i] };
-                };
-
-                return exprHandler.withContext(this._context).evalValue(jsepEval(jsep(bb.slice(1)), exprHandler));
-              }
-              return args[i];
-            }) as any);
+            funcContext.add(createDefine(define.args[i], args[i]));
           }
+
+          m = m.replace(new RegExp('##' + '(.+?(?=##))?##', 'g'), ((aa: string, bb: string) => {
+            if (bb != null) {
+              let hasName = -1;
+              for (let i = 0; i < define.args.length; ++i) {
+                if (bb.startsWith(define.args[i] + '|')) {
+                  hasName = i;
+                  break;
+                }
+              }
+
+              exprHandler.onIt = function () {
+                return { result: args[hasName] };
+              };
+              return exprHandler.withContext(funcContext).evalValue(jsepEval(jsep(bb.substring(bb.indexOf('|') + 1)), exprHandler));
+            }
+            return aa;
+          }) as any);
           return m;
         });
       } else {
@@ -444,14 +454,33 @@ class Preprocessor {
       } else if (this.canProcess() && trimmedLine.startsWith('#define ')) {
         const defineName = trimmedLine.substring(8).split(' ')[0];
         const defineValue = trimmedLine.substring(8).split(' ').slice(1).join(' ');
-        this._context.add(createDefine(defineName, this.processLine(defineValue)));
+        let r: string[] = [];
+        if (defineValue.endsWith('\\')) {
+          r.push(defineValue.slice(0, -1));
+          do {
+            ++i;
+            r.push(lines[i].endsWith('\\') ? lines[i].slice(0, -1).trimEnd() : lines[i]);
+          } while (lines[i].endsWith('\\'));
+        }
+        this._context.add(createDefine(defineName, this.processLine(r.length === 0 ? defineValue : r.join('\n'))));
       } else if (this.canProcess() && trimmedLine.startsWith('#definefunc')) {
         const defineName = trimmedLine.substring(12).substring(0, trimmedLine.indexOf(')', 12) - 11);
         const args = defineName
           .substring(defineName.indexOf('(') + 1, defineName.indexOf(')'))
           .split(',')
           .map((it) => it.trim());
-        this._context.add(createDefineFunc(defineName.substring(0, defineName.indexOf('(')), args, trimmedLine.substring(trimmedLine.indexOf(')') + 1).trim()));
+        const defineValue = trimmedLine.substring(trimmedLine.indexOf(')') + 1).trim();
+
+        let r: string[] = [];
+        if (defineValue.endsWith('\\')) {
+          r.push(defineValue.slice(0, -1));
+          do {
+            ++i;
+            r.push(lines[i].endsWith('\\') ? lines[i].slice(0, -1).trimEnd() : lines[i]);
+          } while (lines[i].endsWith('\\'));
+        }
+
+        this._context.add(createDefineFunc(defineName.substring(0, defineName.indexOf('(')), args, r.length === 0 ? defineValue : r.join('\n')));
       } else if (this.canProcess() && trimmedLine.startsWith('#undef')) {
         const defineName = trimmedLine.substring(7);
         if (this._context.has(defineName)) {
@@ -463,7 +492,7 @@ class Preprocessor {
       } else if (this.canProcess() && trimmedLine.startsWith('#include ')) {
         const includeFile = trimmedLine.split(' ').slice(1).join(' ').slice(1, -1);
         const tempPreprocessor = new Preprocessor(this._parentContext);
-        tempPreprocessor.process(Deno.readTextFileSync(resolve('pack/include', includeFile)));
+        tempPreprocessor.process(Deno.readTextFileSync(resolve('pack/include', includeFile + '.jsonui')));
         for (const define of tempPreprocessor.getContext().getDefines()) {
           this._context.add(define);
         }

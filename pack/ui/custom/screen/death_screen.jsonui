@@ -1,5 +1,5 @@
 #ignore MCPE_CURRENT < MCPE_0_16
-#include "helpers.jsonui"
+#include "helpers/color"
 {
   namespace = "kmjava_death",
 

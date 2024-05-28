@@ -1,4 +1,5 @@
-#include "helpers.jsonui"
+#include "helpers"
+#include "helpers/button"
 {
   namespace = "kmjava_language_choice",
 
@@ -125,18 +126,7 @@
         binding_type = "collection"
       }
     ],
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_language_choice",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_language_choice",
-        condition = "focus"
-      }
-    ],
+    BUTTON_MAPPINGS_NAME("button.menu_language_choice"),
 #endif
     controls = [
       {
@@ -281,41 +271,8 @@
           $button_text = "gui.back",
           $pressed_button_name = "button.menu_exit"
 #else
-          button_mappings = [
-            {
-              from_button_id = "button.menu_select",
-              to_button_id = "button.menu_exit",
-              condition = "hover"
-            },
-            {
-              from_button_id = "button.menu_ok",
-              to_button_id = "button.menu_exit",
-              condition = "focus"
-            }
-          ],
-          controls = [
-            {
-              default@kmjava_button.button_default_background = {
-                controls = [
-                  { text@kmjava_button.button_text = { text = "gui.back" } }
-                ]
-              }
-            },
-            {
-              hover@kmjava_button.button_hover_background = {
-                controls = [
-                  { text@kmjava_button.button_text = { text = "gui.back" } }
-                ]
-              }
-            },
-            {
-              pressed@kmjava_button.button_hover_background = {
-                controls = [
-                  { text@kmjava_button.button_text = { text = "gui.back" } }
-                ]
-              }
-            }
-          ]
+          BUTTON_MAPPINGS_NAME("button.menu_exit"),
+          BUTTON_CONTROLS_WITH_TEXT("gui.back")
 #endif
         }
       }

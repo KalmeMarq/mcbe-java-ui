@@ -1,0 +1,73 @@
+#if MCPE_CURRENT < MCPE_0_14
+
+#definefunc BUTTON_MAPPINGS_NAME(pressedButtonName) button_mappings = [ \
+      { \
+        from_button_id = "button.menu_select", \
+        to_button_id = ##pressedButtonName##, \
+        condition = "hover" \
+      }, \
+      { \
+        from_button_id = "button.menu_ok", \
+        to_button_id = ##pressedButtonName##, \
+        condition = "focus" \
+      } \
+    ]
+
+#definefunc BUTTON_CONTROLS_WITH_TEXT(text) controls = [ \
+      { \
+        default@kmjava_button.button_default_background = { \
+          controls = [ \
+            { text@kmjava_button.button_text = { text = ##text## } } \
+          ] \
+        } \
+      }, \
+      { \
+        hover@kmjava_button.button_hover_background = { \
+          controls = [ \
+            { text@kmjava_button.button_text = { text = ##text## } } \
+          ] \
+        } \
+      }, \
+      { \
+        pressed@kmjava_button.button_hover_background = { \
+          controls = [ \
+            { text@kmjava_button.button_text = { text = ##text## } } \
+          ] \
+        } \
+      } \
+    ]
+
+#definefunc BUTTON_98_CONTROLS_WITH_TEXT(text) controls = [ \
+      { \
+        default = { \
+          type = "panel", \
+          controls = [ \
+            { left@kmjava_button.button_98_left_default_background = {} }, \
+            { right@kmjava_button.button_98_right_default_background = {} }, \
+            { text@kmjava_button.button_text = { text = ##text## } } \
+          ] \
+        } \
+      }, \
+      { \
+        hover = { \
+          type = "panel", \
+          controls = [ \
+            { left@kmjava_button.button_98_left_hover_background = {} }, \
+            { right@kmjava_button.button_98_right_hover_background = {} }, \
+            { text@kmjava_button.button_text = { text = ##text## } } \
+          ] \
+        } \
+      }, \
+      { \
+        pressed = { \
+          type = "panel", \
+          controls = [ \
+            { left@kmjava_button.button_98_left_hover_background = {} }, \
+            { right@kmjava_button.button_98_right_hover_background = {} }, \
+            { text@kmjava_button.button_text = { text = ##text## } } \
+          ] \
+        } \
+      } \
+    ]
+
+#endif

@@ -1,3 +1,4 @@
+#include "helpers/button"
 {
   namespace = "kmjava_title",
 
@@ -293,133 +294,23 @@
   },
 
   play_button@kmjava_button.button = {
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_play",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_play",
-        condition = "focus"
-      }
-    ],
-    controls = [
-      {
-        default@kmjava_button.button_default_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.play" } }
-          ]
-        }
-      },
-      {
-        hover@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.play" } }
-          ]
-        }
-      },
-      {
-        pressed@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.play" } }
-          ]
-        }
-      }
-    ]
+    BUTTON_MAPPINGS_NAME("button.menu_play"),
+    BUTTON_CONTROLS_WITH_TEXT("menu.play")
   },
 
   achievements_button@kmjava_button.button = {
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_achievements",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_achievements",
-        condition = "focus"
-      }
-    ],
-    controls = [
-      {
-        default@kmjava_button.button_default_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.achievements" } }
-          ]
-        }
-      },
-      {
-        hover@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.achievements" } }
-          ]
-        }
-      },
-      {
-        pressed@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.achievements" } }
-          ]
-        }
-      }
-    ]
+    BUTTON_MAPPINGS_NAME("button.menu_achievements"),
+    BUTTON_CONTROLS_WITH_TEXT("menu.achievements")
   },
 
   skins_button@kmjava_button.button = {
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_skins",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_skins",
-        condition = "focus"
-      }
-    ],
-    controls = [
-      {
-        default@kmjava_button.button_default_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.skins" } }
-          ]
-        }
-      },
-      {
-        hover@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.skins" } }
-          ]
-        }
-      },
-      {
-        pressed@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "menu.skins" } }
-          ]
-        }
-      }
-    ]
+    BUTTON_MAPPINGS_NAME("button.menu_skins"),
+    BUTTON_CONTROLS_WITH_TEXT("menu.skins")
   },
 
   language_button@kmjava_button.button = {
     size = [20, 20],
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_language",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_language",
-        condition = "focus"
-      }
-    ],
+    BUTTON_MAPPINGS_NAME("button.menu_language"),
     controls = [
       {
         default = {
@@ -456,98 +347,14 @@
 
   settings_button@kmjava_button.button = {
     size = [98, 20],
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_options",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_options",
-        condition = "focus"
-      }
-    ],
-    controls = [
-      {
-        default = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_98_left_default_background = {} },
-            { right@kmjava_button.button_98_right_default_background = {} },
-            { text@kmjava_button.button_text = { text = "menu.options" } }
-          ]
-        }
-      },
-      {
-        hover = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_98_left_hover_background = {} },
-            { right@kmjava_button.button_98_right_hover_background = {} },
-            { text@kmjava_button.button_text = { text = "menu.options" } }
-          ]
-        }
-      },
-      {
-        pressed = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_98_left_hover_background = {} },
-            { right@kmjava_button.button_98_right_hover_background = {} },
-            { text@kmjava_button.button_text = { text = "menu.options" } }
-          ]
-        }
-      }
-    ]
+    BUTTON_MAPPINGS_NAME("button.menu_options"),
+    BUTTON_98_CONTROLS_WITH_TEXT("menu.options")
   },
 
   quit_button@kmjava_button.button = {
     size = [98, 20],
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_exit",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_exit",
-        condition = "focus"
-      }
-    ],
-    controls = [
-      {
-        default = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_98_left_default_background = {} },
-            { right@kmjava_button.button_98_right_default_background = {} },
-            { text@kmjava_button.button_text = { text = "menu.quit" } }
-          ]
-        }
-      },
-      {
-        hover = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_98_left_hover_background = {} },
-            { right@kmjava_button.button_98_right_hover_background = {} },
-            { text@kmjava_button.button_text = { text = "menu.quit" } }
-          ]
-        }
-      },
-      {
-        pressed = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_98_left_hover_background = {} },
-            { right@kmjava_button.button_98_right_hover_background = {} },
-            { text@kmjava_button.button_text = { text = "menu.quit" } }
-          ]
-        }
-      }
-    ]
+    BUTTON_MAPPINGS_NAME("button.menu_exit"),
+    BUTTON_98_CONTROLS_WITH_TEXT("menu.quit")
   },
 
   buttons_panel = {
@@ -567,41 +374,8 @@
   },
 
   buy_game_button@kmjava_button.button = {
-    button_mappings = [
-      {
-        from_button_id = "button.menu_select",
-        to_button_id = "button.menu_buy_game",
-        condition = "hover"
-      },
-      {
-        from_button_id = "button.menu_ok",
-        to_button_id = "button.menu_buy_game",
-        condition = "focus"
-      }
-    ],
-    controls = [
-      {
-        default@kmjava_button.button_default_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "trial.pauseScreen.buyGame" } }
-          ]
-        }
-      },
-      {
-        hover@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "trial.pauseScreen.buyGame" } }
-          ]
-        }
-      },
-      {
-        pressed@kmjava_button.button_hover_background = {
-          controls = [
-            { text@kmjava_button.button_text = { text = "trial.pauseScreen.buyGame" } }
-          ]
-        }
-      }
-    ]
+    BUTTON_MAPPINGS_NAME("button.menu_buy_game"),
+    BUTTON_CONTROLS_WITH_TEXT("trial.pauseScreen.buyGame")
   },
 
   trial_buttons_panel = {
