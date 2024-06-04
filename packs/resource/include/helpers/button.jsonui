@@ -37,6 +37,39 @@
       } \
     ]
 
+#define BUTTON_20_CONTROLS_WITH_ICON(iconControl) controls = [ \
+      { \
+        default = { \
+          type = "panel", \
+          controls = [ \
+            { left@kmjava_button.button_20_left_default_background = {} }, \
+            { right@kmjava_button.button_20_right_default_background = {} }, \
+            { icon@##iconControl## = {} } \
+          ] \
+        } \
+      }, \
+      { \
+        hover = { \
+          type = "panel", \
+          controls = [ \
+            { left@kmjava_button.button_20_left_hover_background = {} }, \
+            { right@kmjava_button.button_20_right_hover_background = {} }, \
+            { icon@##iconControl## = {} } \
+          ] \
+        } \
+      }, \
+      { \
+        pressed = { \
+          type = "panel", \
+          controls = [ \
+            { left@kmjava_button.button_20_left_hover_background = {} }, \
+            { right@kmjava_button.button_20_right_hover_background = {} }, \
+            { icon@##iconControl## = {} } \
+          ] \
+        } \
+      } \
+    ]
+
 #define BUTTON_98_CONTROLS_WITH_TEXT(text) controls = [ \
       { \
         default = { \

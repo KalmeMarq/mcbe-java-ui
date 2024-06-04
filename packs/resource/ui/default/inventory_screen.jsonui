@@ -1,0 +1,72 @@
+#ignore MCPE_CURRENT != MCPE_0_12
+{
+  namespace = "inventory",
+
+  screen_common = {
+    type = "screen",
+    button_mappings = [
+      {
+        from_button_id = "button.menu_cancel",
+        to_button_id = "button.menu_exit",
+        condition = "none"
+      },
+      {
+        from_button_id = "button.menu_inventory_cancel",
+        to_button_id = "button.menu_exit",
+        condition = "none"
+      },
+      {
+        from_button_id = "button.menu_up",
+        to_button_id = "button.menu_up",
+        condition = "none",
+       scope = "view"
+      },
+      {
+        from_button_id = "button.menu_down",
+        to_button_id = "button.menu_down",
+        condition = "none",
+       scope = "view"
+      },
+      {
+        from_button_id = "button.menu_left",
+        to_button_id = "button.menu_left",
+        condition = "none",
+       scope = "view"
+      },
+      {
+        from_button_id = "button.menu_right",
+        to_button_id = "button.menu_right",
+        condition = "none",
+       scope = "view"
+      },
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.cursor_drop_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_secondary_select",
+        to_button_id = "button.cursor_drop_one",
+        condition = "hover"
+      }
+    ]
+  },
+
+  crafting_screen@screen_common = {
+    controls = [
+      { screen_content@kmjava_crafting.screen_content = {} }
+    ]
+  }, 
+
+  stone_cutter_screen@screen_common = {
+    controls = [
+      { screen_content@kmjava_stonecutter.screen_content = {} }
+    ]
+  },
+
+  survival_screen@screen_common = {
+    controls = [
+      { screen_content@kmjava_survival_inventory.screen_content = {} }
+    ]
+  } 
+}

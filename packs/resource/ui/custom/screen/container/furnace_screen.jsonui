@@ -1,3 +1,4 @@
+#ignore MCPE_CURRENT < MCPE_0_13
 {
   namespace = "kmjava_furnace",
 

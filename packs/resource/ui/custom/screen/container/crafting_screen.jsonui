@@ -1,0 +1,407 @@
+#ignore MCPE_CURRENT > MCPE_0_12
+#include "helpers/props"
+{
+  namespace = "kmjava_crafting",
+
+  container_bg = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/container/crafting_table.png",
+    z_order = 2,
+    size = [176, 166],
+    uv = [0, 0],
+    uv_size = [176, 166]
+  },
+
+  container_title = {
+    type = "label",
+    size = [1, 1],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [29, 6],
+    alignment = "left",
+    text = "container.crafting",
+    color = [0.25, 0.25, 0.25, 1.0],
+    z_order = 2
+  },
+
+  input_slot_button = {
+    type = "button",
+    z_order = 2,
+    focus_enabled = true,    
+    hover_control = "hover",
+    pressed_control = "pressed",
+    binding_collection_name = "crafting_input_items",
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.crafting_in_take_all_place_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.crafting_in_take_all_place_all",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_secondary_select",
+        to_button_id = "button.crafting_in_take_half_place_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_select",
+        to_button_id = "button.crafting_in_take_half_place_one",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_auto_place",
+        to_button_id = "button.crafting_in_auto_place",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_secondary_select",
+        to_button_id = "button.crafting_in_auto_place",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop",
+        to_button_id = "button.crafting_in_drop_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop_all",
+        to_button_id = "button.crafting_in_drop_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_double_select",
+        to_button_id = "button.crafting_in_coalesce_stack",
+        condition = "hover"
+      }
+    ],
+    controls = [
+      {
+        hover@kmjava_container.highlight_slot = {
+          controls = [
+            {
+              hover_text@kmjava_container.hover_text = {
+                binding_collection_name = "crafting_input_items",
+                bindings = [
+                  {
+                    binding_name = "#hover_text",
+                    binding_type = "collection"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        pressed@kmjava_container.highlight_slot = {
+          controls = [
+            {
+              hover_text@kmjava_container.hover_text = {
+                binding_collection_name = "crafting_input_items",
+                bindings = [
+                  {
+                    binding_name = "#hover_text",
+                    binding_type = "collection"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  input_slot_grid_item = {
+    type = "grid_item",
+    size = [18, 18],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    controls = [
+      {
+        item@kmjava_container.item_renderer = {    
+          binding_collection_name = "crafting_input_items",
+          bindings = [
+            { binding_name = "#item_id_aux",
+              binding_type = "collection" }
+          ]    
+        }
+      },
+      {
+        item_foil@kmjava_container.item_foil_renderer = {
+          binding_collection_name = "crafting_input_items",
+          bindings = [
+            {
+              binding_name = "#item_id_aux",
+              binding_type = "collection"
+            }
+          ]
+        }
+      },
+      { slot_button@kmjava_crafting.input_slot_button = {} },
+      {
+        stack@kmjava_container.stack_count_label = {
+          binding_collection_name = "crafting_input_items"
+        }
+      },
+      {
+        durability@kmjava_container.durability_bar = {        
+          binding_collection_name = "crafting_input_items"
+        }
+      }
+    ]
+  },
+
+  output_slot_button = {
+    type = "button",
+    focus_enabled = true,    
+    hover_control = "hover",
+    pressed_control = "pressed",
+    z_order = 2,
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.crafting_out_take_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.crafting_out_take_one",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_secondary_select",
+        to_button_id = "button.crafting_out_take_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_select",
+        to_button_id = "button.crafting_out_take_one",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_auto_place",
+        to_button_id = "button.crafting_out_auto_place_max",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_secondary_select",
+        to_button_id = "button.crafting_out_auto_place_max",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop",
+        to_button_id = "button.crafting_out_drop_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop_all",
+        to_button_id = "button.crafting_out_drop_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_double_select",
+        to_button_id = "button.crafting_out_take_one",
+        condition = "hover"
+      }
+    ]
+  },
+
+  output_slot = {
+    type = "panel",
+    size = [18, 18],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [123, 34],
+    controls = [
+      {
+        item@kmjava_container.item_renderer = {
+          bindings = [
+            {
+              binding_name = "#work_bench_output_item",
+              binding_name_override = "#item_id_aux"
+            }      
+          ] 
+        }
+      },
+      {
+        slot_button@kmjava_crafting.output_slot_button = {
+          controls = [
+            {
+              hover@kmjava_container.highlight_slot = {
+                controls = [
+                  {
+                    hover_text@kmjava_container.hover_text = {
+                      bindings = [
+                        {
+                          binding_name = "#work_bench_output_hover_text",
+                          binding_name_override =  "#hover_text"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              pressed@kmjava_container.highlight_slot = {
+                controls = [
+                  {
+                    hover_text@kmjava_container.hover_text = {
+                      bindings = [
+                        {
+                          binding_name = "#work_bench_output_hover_text",
+                          binding_name_override =  "#hover_text"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        stack@kmjava_container.stack_count_label = {
+          bindings = [
+            {
+              binding_name = "#work_bench_output_item_stack_count",
+              binding_name_override = "#inventory_stack_count"
+            }
+          ] 
+        }
+      }
+    ]
+  },
+
+  crafting_grid = {
+    type = "grid",
+    size = [54, 54],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [29, 16],
+    grid_dimensions = [3, 3],
+    grid_item_template = "kmjava_crafting.input_slot_grid_item"
+  },
+
+  crafting_selected_icon@kmjava_container.item_renderer = {
+    size = [18, 18],
+    LAYER_PROP(28),
+    bindings = [
+      { binding_name = "#crafting_selected_item",
+        binding_name_override = "#item_id_aux" }
+    ],
+    controls = [
+      { @kmjava_crafting.crafting_selected_stack_size_text = {} }
+    ]
+  },
+
+  crafting_selected_foil@kmjava_container.item_foil_renderer = {
+    z_order = 29,
+    offset = [ 2, 1 ],
+    bindings = [
+      { binding_name = "#crafting_selected_item",
+        binding_name_override = "#item_id_aux" }
+    ]
+  },
+
+  crafting_selected_stack_size_text@kmjava_container.inventory_selected_stack_size_text = {
+    LAYER_PROP(30),
+    size = [1, 1],
+    alignment = "right",
+    color = [ 1.0, 1.0, 1.0, 1.0 ],
+    offset = [-1.5, -7],
+    text = "#crafting_selected_item_stack_count",
+    bindings = [
+      { binding_name = "#crafting_selected_item_stack_count" }
+    ]
+  },
+
+  crafting_hold_icon = {
+    type = "custom",
+    renderer = "progress_bar_renderer",
+    z_order = 15,
+    offset = [ 0, -7 ],
+	  size = [ 15, 3 ],
+	  bindings = [
+		  { binding_name = "#progress_bar_visible" },
+		  { binding_name = "#progress_bar_total_amount" },
+		  { binding_name = "#progress_bar_current_amount" }
+	  ]
+  },
+  
+  crafting_selected_icon_button@kmjava_container.inventory_selected_icon_button = {
+    controls = [
+      { default@kmjava_crafting.crafting_selected_icon = {} },
+      { pressed@kmjava_crafting.crafting_selected_icon = {} },
+      { hover@kmjava_crafting.crafting_selected_icon = {} },
+      { durability@kmjava_container.durability_bar_grabbed = {} }
+    ]
+  },
+
+  crafting_hold_icon_button = {
+    type = "button",
+    default_control = "default",
+    hover_control = "hover",
+    pressed_control = "pressed",
+    z_order = -10,
+    size = [ 10, 10 ],
+    offset = [ 0, 0 ],
+    follows_cursor = true,
+    sound_name = "random.click",
+    sound_volume = 1.0,
+    sound_pitch = 1.0,
+    always_handle_pointer = true,
+    controls = [
+      {default@kmjava_crafting.crafting_hold_icon = {
+      }},
+      {pressed@kmjava_crafting.crafting_hold_icon = {
+      }},
+      {hover@kmjava_crafting.crafting_hold_icon = {
+      }}
+    ]
+  },
+
+  crafting_selected_foil_button@kmjava_crafting.crafting_selected_icon_button = {
+    controls = [
+      { default@kmjava_crafting.crafting_selected_foil = {
+      }},
+      { pressed@kmjava_crafting.crafting_selected_foil = {
+      }},
+      { hover@kmjava_crafting.crafting_selected_foil = {
+      }}
+    ]
+  },
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      { bg@kmjava_container.screen_background = {} },
+      #if defined(TOUCH) && !defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+        { close@kmjava_container.container_close_panel = { size = ["50% - 88px", "40%"] } },
+      #endif
+      {
+        root@kmjava_container.root_panel = {
+          controls = [
+            { bg@kmjava_crafting.container_bg = {} },
+            #if defined(TOUCH) && defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+              { close@kmjava_container.container_close_panel = {} },
+            #endif
+            { inventory@kmjava_container.inventory_hotbar_panel = {} },
+            { title@kmjava_crafting.container_title = {} },
+            { crafting_grid@kmjava_crafting.crafting_grid = {} },
+            { output@kmjava_crafting.output_slot = {} },
+            { crafting_selected_icon_button@kmjava_crafting.crafting_selected_icon_button = {} },
+            { crafting_selected_foil_button@kmjava_crafting.crafting_selected_foil_button = {} },
+            { crafting_hold_icon_button@kmjava_crafting.crafting_hold_icon_button = {} }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,11 +1,15 @@
-import { copySync, existsSync, walkSync, ensureDirSync } from 'https://deno.land/std@0.224.0/fs/mod.ts';
-import { debounce } from 'https://deno.land/std@0.224.0/async/mod.ts';
-import { resolve, relative, dirname } from 'https://deno.land/std@0.224.0/path/mod.ts';
+import { copySync, existsSync, walkSync, ensureDirSync, ensureDir } from 'jsr:@std/fs@0.229.1';
+import { debounce } from 'jsr:@std/async@0.224.1';
+import { resolve, relative, dirname, extname } from 'jsr:@std/path@0.225.1';
 import jsep from 'npm:jsep@1.3.8';
 import jsepNumbers from 'npm:@jsep-plugin/numbers@1.0.1';
+import jsepTernary from 'npm:@jsep-plugin/ternary@1.1.3';
 import { JSONC } from 'https://deno.land/x/jsonc_parser@v0.0.1/mod.ts';
+import * as toml from 'jsr:@std/toml@0.224.0';
+import { loadSync as loadEnv } from 'jsr:@std/dotenv@0.224.0';
 
 jsep.plugins.register(jsepNumbers);
+jsep.plugins.register(jsepTernary);
 
 jsep.addBinaryOp('**', 11, true);
 jsep.addBinaryOp('^', 10);
@@ -25,7 +29,10 @@ const DIRECTIVES_REGEX = {
   ENDEXCLUDE: /^#endexclude\s*/,
   FOR: /^#for\s(?<start>\w+)\s+@\s+(?<end>\w+)\s*/,
   ENDFOR: /^#endfor\s*/,
-  INCLUDE: /^#include\s+"(?<file>[a-zA-Z0-9./_]+)"/
+  INCLUDE: /^#include\s+"(?<file>[a-zA-Z0-9./_]+)"/,
+  SAVE: /^#save\s+(?<save>\w+)/,
+  ENDSAVE: /^#endsave\s*/,
+  PASTE: /^#paste\s+(?<save>\w+)/
 };
 
 const MCPE_VERSION_REGEX = /MCPE_(?<major>\d{1,3})_(?<minor>\d{1,3})(_(?<patch>\d{1,3}))?/;
@@ -54,7 +61,7 @@ function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): { re
       case '~':
         return { result: ~arg };
       case '!':
-        return { result: ~arg };
+        return { result: !arg };
       default:
         throw new Error('jsep: Unknown operator ' + expression.operator);
     }
@@ -124,24 +131,40 @@ function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): { re
   throw new Error('jsepEval: Unreachable code');
 }
 
+function stripJSONComments(content: string) {
+  return content.replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (m, g) => (g ? '' : m));
+}
+
 export type MCPEVersion = `MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
 export type MCPEVersionWithComparision<T extends string> = `${T}${MCPEVersion}`;
 
 export interface ConfigProfile {
   version: MCPEVersionWithComparision<'>'> | MCPEVersionWithComparision<'<'> | MCPEVersionWithComparision<'<='> | MCPEVersionWithComparision<'>='> | MCPEVersion;
-  minecraftAppData?: string;
-  resourcePackPath?: string;
+  flags?: string[];
+  minecraft_data_path?: string;
+  resource_pack_path?: string;
+  game_save_data_path?: string;
+  custom_textures_path: string;
+  custom_ui_path: string;
+  minify?: string;
+  obfuscate?: boolean;
+  packs?: {
+    resource_folder_name: string;
+  };
 }
 
 export interface PackConfig {
-  targetVersion: string; //`MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
+  target_version: string; //`MCPE_${number}` | `MCPE_${number}_${number}` | `MCPE_${number}_${number}_${number}`;
+  flags?: string[];
+  include_paths?: string[];
   profiles?: ConfigProfile[];
+  export?: 'development' | 'local';
 }
 
 type DefineType = 'constant' | 'function';
 type Define = {
   name: string;
-  value: string | number;
+  value: string | number | null;
   cachedRegex: RegExp;
 } & (
   | {
@@ -153,12 +176,18 @@ type Define = {
     }
 );
 
-export function createDefine(name: string, value: string | number): Define {
+export function createDefine(name: string, value: string | number | null): Define {
   return { name, type: 'constant', value, cachedRegex: new RegExp('\\b' + name + '\\b') };
 }
 
 export function createDefineFunc(name: string, args: string[], value: string | number): Define {
-  return { name, args, type: 'function', value, cachedRegex: new RegExp('\\b' + name + '\\(([a-z-+.A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")\\s*(\\s*,\\s*[a-zA-Z.0-9]+){0,}\\)') };
+  return {
+    name,
+    args,
+    type: 'function',
+    value,
+    cachedRegex: new RegExp('\\b' + name + '\\(([a-zA-Z0-9_]+\\s*=\\s*)?([a-z-+._A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")\\s*(\\s*,\\s*([a-zA-Z0-9_]+\\s*=\\s*)?\\s*([a-z-+._A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")){0,}\\)')
+  };
 }
 
 type DynamicDefineCreator = (name: string) => [true, Define] | [false, undefined];
@@ -234,7 +263,8 @@ const exprHandler: ExpressionHandler = {
   },
   evalValue(value: any) {
     if ('isIdentifier' in value) {
-      return this.context.get(value.result)!.value;
+      const d = this.context.get(value.result);
+      return d != null ? d.value : 0;
     }
     return value.result;
   },
@@ -290,15 +320,24 @@ function translateToJson(content: string) {
     });
 }
 
+function removeTrailingCommas(content: string) {
+  return content.replace(/(?!"[^"]*)((,)(?=(\s*\/\/\s*(.+)?(?=\n)){0,}(\/*(.+)*\/)?\s*[\]}])(?![^"]*"))/gm, '');
+}
+
 export class Preprocessor {
   private _parentContext?: DefineContext;
   private _context: DefineContext;
   private _excluding = false;
   private _ifs: boolean[] = [];
 
-  constructor(parentContext?: DefineContext) {
+  private _saves: Map<string, string[]> = new Map();
+  private _currentSave: string | null = null;
+  private _includePaths: string[];
+
+  constructor(parentContext?: DefineContext, includePaths: string[] = []) {
     this._parentContext = parentContext;
     this._context = new DefineContext(parentContext);
+    this._includePaths = includePaths;
   }
 
   private reset() {
@@ -326,12 +365,18 @@ export class Preprocessor {
           const args = a
             .substring(a.indexOf('(') + 1, a.indexOf(')'))
             .split(',')
-            .map((it) => it.trim());
+            .map((it) => it.trim())
+            .map((it) => {
+              if (it.includes('=')) {
+                return { key: it.split('=')[0].trim(), value: it.split('=')[1].trim() };
+              }
+              return { value: it };
+            });
 
           // Save the arguments into define constants
           const funcContext = new DefineContext(this._context);
           for (let i = 0; i < define.args.length; ++i) {
-            funcContext.add(createDefine(define.args[i], args[i]));
+            funcContext.add(createDefine(define.args[i], args[i] == null ? null : args[i].value));
           }
 
           // For every parameter usage inside a ## ##, evaluate the expression
@@ -353,9 +398,7 @@ export class Preprocessor {
   private evaluate(expression: string): void;
   private evaluate(context: DefineContext, expression: string): void;
   private evaluate(contextOrExpression: string | DefineContext, expression?: string): void {
-    return exprHandler
-      .withContext(typeof contextOrExpression === 'string' ? this._context : contextOrExpression)
-      .evalValue(jsepEval(jsep(expression != null ? expression : (contextOrExpression as string)), exprHandler));
+    return exprHandler.withContext(typeof contextOrExpression === 'string' ? this._context : contextOrExpression).evalValue(jsepEval(jsep(expression != null ? expression : (contextOrExpression as string)), exprHandler));
   }
 
   private matchDirective(string: string, regex: RegExp) {
@@ -416,15 +459,15 @@ export class Preprocessor {
           this._context.add(createDefine(match['define'], this.processLine(resultBody.join('\n'))));
         }
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IF)) != null) {
-        this._ifs.push(this._ifs[this._ifs.length - 1] ? Boolean(this.evaluate(match['expression'])) == true : false);
+        this._ifs.push(Boolean(this.evaluate(match['expression'])) == true);
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IFDEF)) != null) {
-        this._ifs.push(this._ifs[this._ifs.length - 1] ? this._context.has(match['define']) : false);
+        this._ifs.push(this._context.has(match['define']));
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IFNDEF)) != null) {
-        this._ifs.push(this._ifs[this._ifs.length - 1] ? !this._context.has(match['define']) : false);
+        this._ifs.push(!this._context.has(match['define']));
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ELIF)) != null) {
-        this._ifs[this._ifs.length - 1] = this._ifs[this._ifs.length - 1] ? Boolean(this.evaluate(match['expression'])) == true : false;
+        this._ifs[this._ifs.length - 1] = Boolean(this.evaluate(match['expression'])) == true;
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ELSE)) != null) {
-        this._ifs[this._ifs.length - 1] = this._ifs[this._ifs.length - 1] ? !this._ifs[this._ifs.length - 1] : false;
+        this._ifs[this._ifs.length - 1] = !this._ifs[this._ifs.length - 1];
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ENDIF)) != null) {
         this._ifs.pop();
       } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.UNDEF)) != null) {
@@ -445,15 +488,35 @@ export class Preprocessor {
         this._excluding = true;
       } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ENDEXCLUDE)) != null) {
         this._excluding = false;
+      } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.SAVE)) != null) {
+        this._currentSave = match['save'];
+        this._saves.set(this._currentSave, []);
+      } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ENDSAVE)) != null) {
+        this._currentSave = null;
+      } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.PASTE)) != null) {
+        result.push(...(this._saves.get(match['save']) ?? []));
       } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.INCLUDE)) != null) {
         const includeFile = trimmedLine.split(' ').slice(1).join(' ').slice(1, -1);
-        const tempPreprocessor = new Preprocessor(this._parentContext);
-        tempPreprocessor.process(Deno.readTextFileSync(resolve('pack/include', includeFile + '.jsonui')));
-        for (const define of tempPreprocessor.getContext().getDefines()) {
-          this._context.add(define);
+
+        for (const includePath of this._includePaths) {
+          if (!existsSync(resolve(includePath, includeFile + '.jsonui'))) continue;
+
+          const tempPreprocessor = new Preprocessor(this._parentContext, this._includePaths);
+          tempPreprocessor.process(Deno.readTextFileSync(resolve('packs/resource/include', includeFile + '.jsonui')));
+          for (const define of tempPreprocessor.getContext().getDefines()) {
+            this._context.add(define);
+          }
         }
       } else if (this.canProcess()) {
-        result.push(this.processLine(lines[i]));
+        if (lines[i].trim().length === 0) {
+          if (result.length > 0 && result[result.length - 1] != '') result.push('');
+          continue;
+        }
+        const processedLine = this.processLine(lines[i]);
+        if (this._currentSave != null) {
+          this._saves.get(this._currentSave)?.push(processedLine);
+        }
+        result.push(processedLine);
       }
     }
 
@@ -463,6 +526,7 @@ export class Preprocessor {
         .join('\n')
         .replace(/,(?=[\n\r ]*(\]|\}))/gm, '')
         .replace(/\n\n\n/gm, '\n\n')
+        .replace(/}\s*\n\s*\n\s*}/gm, '}\n}')
     ];
   }
 }
@@ -480,18 +544,21 @@ function getMCPEVersionNumerically(value: string) {
   return Number(`${major}`.padStart(3, '0') + `${minor}`.padStart(3, '0') + `${patch}`.padStart(3, '0'));
 }
 
-// TODO: Better watch mode
-// TODO: Fix this shiz up
+if (import.meta.main) {
+  const env = loadEnv();
 
-async function main() {
-  const config = (await import('./pack.config.ts')).default;
+  const config = toml.parse(Deno.readTextFileSync('config.toml')) as unknown as PackConfig;
+
+  function ensureFromEnv(value: string) {
+    return value.startsWith('env:') ? env[value.substring('env:'.length)] : value;
+  }
 
   const profile = config.profiles?.find((it) => {
     if (it.version.startsWith('MCPE')) {
-      return it.version == config.targetVersion;
+      return it.version == ensureFromEnv(config.target_version);
     } else {
       const version = getMCPEVersionNumerically(it.version.substring(it.version.indexOf('MCPE')));
-      const targetVersion = getMCPEVersionNumerically(config.targetVersion);
+      const targetVersion = getMCPEVersionNumerically(ensureFromEnv(config.target_version));
       const op = it.version.substring(0, it.version.indexOf('MCPE'));
 
       if (op == '>') return targetVersion > version;
@@ -501,447 +568,200 @@ async function main() {
 
       return false;
     }
-  });
+  })!;
 
-  const rootContext = new DefineContext(undefined, (name: string) => {
+  const context = new DefineContext(undefined, (name: string) => {
     if (isMCPEVersion(name)) {
       return [true, createDefine(name, getMCPEVersionNumerically(name))];
     }
     return [false, undefined];
   });
-  rootContext.add(createDefine('MCPE_CURRENT', getMCPEVersionNumerically(config.targetVersion)));
+  context.add(createDefine('MCPE_CURRENT', getMCPEVersionNumerically(ensureFromEnv(config.target_version))));
 
-  console.log('Targetting ' + config.targetVersion);
-
-  const preprocessor = new Preprocessor(rootContext);
-
-  if (getMCPEVersionNumerically(config.targetVersion) < getMCPEVersionNumerically('MCPE_0_16')) {
-    const minecraftAppData = profile?.minecraftAppData!;
-
-    if (existsSync('out')) {
-      Deno.removeSync('out');
-    }
-    Deno.symlinkSync(minecraftAppData, 'out');
-
-    const langPath = getMCPEVersionNumerically(config.targetVersion) > getMCPEVersionNumerically('MCPE_0_13') ? 'loc' : 'lang';
-
-    rootContext.add(createDefine('DEFAULT_TEXTURES_PATH', ''));
-    rootContext.add(createDefine('CUSTOM_TEXTURES_PATH', 'out'));
-    rootContext.add(createDefine('CUSTOM_UI_PATH', 'ui/out'));
-
-    if (!existsSync(minecraftAppData + '/ui_backup')) {
-      console.log('Backuping ui folder');
-      copySync(resolve(minecraftAppData, 'ui'), resolve(minecraftAppData, 'ui_backup'));
-    } else {
-      copySync(resolve(minecraftAppData, 'ui_backup'), resolve(minecraftAppData, 'ui'), { overwrite: true });
-      if (existsSync(minecraftAppData + '/ui/out')) {
-        Deno.removeSync(minecraftAppData + '/ui/out', { recursive: true });
-      }
-    }
-
-    {
-      const uiDefs = JSONC.parse(Deno.readTextFileSync(resolve(minecraftAppData, 'ui_backup', '_ui_defs.json')));
-      let defaultEntries = '';
-      uiDefs.ui_defs.forEach((it: string) => (defaultEntries += `    "${it}",\n`));
-      rootContext.add(createDefine('DEFAULT_ENTRIES', defaultEntries));
-    }
-
-    if (!existsSync(resolve(minecraftAppData, langPath + '_backup'))) {
-      console.log('Backuping lang folder');
-      copySync(resolve(minecraftAppData, langPath), resolve(minecraftAppData, langPath + '_backup'));
-    }
-
-    if (!existsSync(resolve(minecraftAppData, 'images/out'))) {
-      Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
-    } else {
-      Deno.removeSync(resolve(minecraftAppData, 'images/out'), { recursive: true });
-      Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
-    }
-
-    for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-
-      const filename = relative('pack/langs', entry.path).replace('.jsonui', '.json');
-      let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-
-      if (!success) continue;
-
-      if (isJSONUI) resultContent = translateToJson(resultContent!);
-
-      const code = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
-      let vani = Deno.readTextFileSync(resolve(minecraftAppData, langPath + '_backup/' + code + '-pocket.lang'));
-      vani += '\n\n## Custom';
-
-      for (const [key, value] of Object.entries(JSONC.parse(resultContent!))) {
-        vani += '\n' + key + '=' + value;
-      }
-
-      Deno.writeTextFileSync(resolve(minecraftAppData, langPath + '/' + code + '-pocket.lang'), vani);
-    }
-
-    for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
-      if (!entry.path.endsWith('.png')) continue;
-      const filename = relative('pack/textures/custom', entry.path);
-      ensureDirSync(resolve(minecraftAppData, 'images/out', dirname(filename)));
-      Deno.copyFileSync(entry.path, resolve(minecraftAppData, 'images/out', filename));
-    }
-
-    for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-      const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
-      let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-      if (isJSONUI) content = translateToJson(content!);
-
-      Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
-    }
-
-    if (existsSync(resolve(minecraftAppData, 'ui', 'out'))) {
-      Deno.removeSync(resolve(minecraftAppData, 'ui', 'out'), { recursive: true });
-    }
-
-    for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-      const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
-      let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-      if (isJSONUI) content = translateToJson(content!);
-
-      ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
-      Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', 'out', filename), content!);
-    }
-
-    for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-      let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-      if (isJSONUI) resultContent = translateToJson(resultContent!);
-      const filename = relative('pack', entry.path).replace('.jsonui', '.json');
-
-      if (existsSync(resolve(minecraftAppData, filename)) && !existsSync(resolve(minecraftAppData, filename + '-backup'))) {
-        Deno.copyFileSync(resolve(minecraftAppData, filename), resolve(minecraftAppData, filename + '-backup'));
-      }
-
-      Deno.writeTextFileSync(resolve(minecraftAppData, filename), resultContent!);
-    }
-
-    if (Deno.args.includes('-w')) {
-      const watcher = Deno.watchFs('pack');
-
-      Deno.addSignalListener('SIGINT', () => {
-        watcher.close();
-      });
-
-      const handleEvent = debounce((event: Deno.FsEvent) => {
-        const entryPath = relative('pack', event.paths[0]);
-        const entryDirname = dirname(entryPath).replaceAll('\\', '/');
-
-        if (entryDirname == '.') {
-          for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) resultContent = translateToJson(resultContent!);
-            const filename = relative('pack', entry.path).replace('.jsonui', '.json');
-
-            if (existsSync(resolve(minecraftAppData, filename)) && !existsSync(resolve(minecraftAppData, filename + '-backup'))) {
-              Deno.copyFileSync(resolve(minecraftAppData, filename), resolve(minecraftAppData, filename + '-backup'));
-            }
-
-            Deno.writeTextFileSync(resolve(minecraftAppData, filename), resultContent!);
-          }
-        } else if (entryDirname.startsWith('langs')) {
-          for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-
-            const filename = relative('pack/langs', entry.path).replace('.jsonui', '.json');
-            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-
-            if (!success) continue;
-
-            if (isJSONUI) resultContent = translateToJson(resultContent!);
-
-            const code = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
-            let vani = Deno.readTextFileSync(resolve(minecraftAppData, langPath + '_backup/' + code + '-pocket.lang'));
-            vani += '\n\n## Custom';
-
-            for (const [key, value] of Object.entries(JSONC.parse(resultContent!))) {
-              vani += '\n' + key + '=' + value;
-            }
-
-            Deno.writeTextFileSync(resolve(minecraftAppData, langPath + '/' + code + '-pocket.lang'), vani);
-          }
-        } else if (entryDirname.startsWith('textures/custom')) {
-          if (!existsSync(resolve(minecraftAppData, 'images/out'))) {
-            Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
-          } else {
-            Deno.removeSync(resolve(minecraftAppData, 'images/out'), { recursive: true });
-            Deno.mkdirSync(resolve(minecraftAppData, 'images/out'));
-          }
-
-          for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
-            if (!entry.path.endsWith('.png')) continue;
-            const filename = relative('pack/textures/custom', entry.path);
-            ensureDirSync(resolve(minecraftAppData, 'images/out', dirname(filename)));
-            Deno.copyFileSync(entry.path, resolve(minecraftAppData, 'images/out', filename));
-          }
-        } else if (entryDirname.startsWith('ui/custom')) {
-          if (existsSync(minecraftAppData + '/ui/out')) {
-            Deno.removeSync(minecraftAppData + '/ui/out', { recursive: true });
-          }
-
-          for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
-            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) content = translateToJson(content!);
-
-            ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
-            Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', 'out', filename), content!);
-          }
-        } else if (entryDirname.startsWith('ui/default')) {
-          copySync(resolve(minecraftAppData, 'ui_backup'), resolve(minecraftAppData, 'ui'), { overwrite: true });
-          for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
-            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) content = translateToJson(content!);
-
-            Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
-          }
-        }
-      }, 0);
-
-      for await (const event of watcher) {
-        const entryPath = relative('pack', event.paths[0]);
-        const entryDirname = dirname(entryPath).replaceAll('\\', '/');
-
-        if (entryDirname.startsWith('ui/default')) {
-          const filename = relative(resolve('pack/ui/default'), event.paths[0]).replace('.jsonui', '.json');
-          const endPath = resolve(minecraftAppData, 'ui', filename);
-
-          if (event.kind == 'modify') {
-            if (!existsSync(event.paths[0])) {
-              Deno.removeSync(endPath);
-
-              if (existsSync(resolve(minecraftAppData, 'ui_backup', filename))) {
-                Deno.copyFileSync(resolve(minecraftAppData, 'ui_backup', filename), endPath);
-              }
-            } else if (!Deno.statSync(event.paths[0]).isDirectory) {
-              const isJSONUI = event.paths[0].endsWith('.jsonui');
-
-              let [success, content] = preprocessor.process(Deno.readTextFileSync(event.paths[0]));
-              if (success) {
-                if (isJSONUI) content = translateToJson(content!);
-                Deno.writeTextFileSync(resolve(minecraftAppData, 'ui', filename), content!);
-              }
-            }
-          } else if (event.kind == 'remove') {
-            Deno.removeSync(endPath);
-
-            if (existsSync(resolve(minecraftAppData, 'ui_backup', filename))) {
-              Deno.copyFileSync(resolve(minecraftAppData, 'ui_backup', filename), endPath);
-            }
-          }
-        } else if (entryDirname.startsWith('ui/custom')) {
-          const filename = relative(resolve('pack/ui/custom'), event.paths[0]).replace('.jsonui', '.json');
-          const endPath = resolve(minecraftAppData, 'ui/out', filename);
-
-          if (event.kind == 'modify') {
-            if (!existsSync(event.paths[0])) {
-              Deno.removeSync(endPath);
-            } else if (!Deno.statSync(event.paths[0]).isDirectory) {
-              const isJSONUI = event.paths[0].endsWith('.jsonui');
-
-              let [success, content] = preprocessor.process(Deno.readTextFileSync(event.paths[0]));
-              if (success) {
-                if (isJSONUI) content = translateToJson(content!);
-                ensureDirSync(resolve(minecraftAppData, 'ui', 'out', dirname(filename)));
-                Deno.writeTextFileSync(resolve(minecraftAppData, 'ui/out', filename), content!);
-              }
-            }
-          } else if (event.kind == 'remove') {
-            Deno.removeSync(endPath);
-          }
-        } else {
-          handleEvent(event);
-        }
-      }
-    }
+  if (getMCPEVersionNumerically(ensureFromEnv(config.target_version)) < getMCPEVersionNumerically('MCPE_0_16')) {
+    runLegacyProfile(profile);
   } else {
-    const resourcePackPath = profile?.resourcePackPath!;
+    runProfile(profile);
+  }
 
-    rootContext.add(createDefine('DEFAULT_TEXTURES_PATH', 'textures'));
-    rootContext.add(createDefine('CUSTOM_TEXTURES_PATH', 'assets'));
-    rootContext.add(createDefine('CUSTOM_UI_PATH', 'ui/out'));
-    rootContext.add(createDefine('DEFAULT_ENTRIES', ''));
-
-    if (existsSync(resourcePackPath)) {
-      Deno.removeSync(resourcePackPath, { recursive: true });
+  function unicodeEscape(value: string) {
+    let result = '';
+    for (let cursor = 0, chr; !isNaN((chr = value.charCodeAt(cursor))); cursor++) {
+      result += '\\u' + ('0000' + chr.toString(16)).slice(-4);
     }
-    Deno.mkdirSync(resourcePackPath);
+    return result;
+  }
 
-    if (existsSync('out')) {
-      Deno.removeSync('out');
-    }
-    Deno.symlinkSync(resourcePackPath, 'out');
+  function obfuscate(content: string) {
+    return content.replace(/"[^"]*"|'[^']*'/g, (subs) => '"' + unicodeEscape(subs.slice(1, -1)) + '"');
+  }
 
-    ensureDirSync(resolve(resourcePackPath, 'assets'));
-    ensureDirSync(resolve(resourcePackPath, 'texts'));
-    ensureDirSync(resolve(resourcePackPath, 'textures'));
-    ensureDirSync(resolve(resourcePackPath, 'ui'));
+  function copyDirP(profile: ConfigProfile, src: string, dst: string, recursive: boolean, filter: (path: string) => boolean, transform: (content: string) => [boolean, string | undefined] = () => [false, undefined]) {
+    const paths: string[] = [];
+    for (const file of walkSync(src, { includeDirs: false, maxDepth: recursive ? 99 : 1 })) {
+      const isTextFile = ['.jsonui', '.json', '.txt'].includes(extname(file.name));
 
-    for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
+      if (!filter(file.path)) continue;
 
-      const filename = relative('pack/langs', entry.path).replace('.jsonui', '.json');
-      let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-      if (isJSONUI) resultContent = translateToJson(resultContent!);
-      const code = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
+      const filepath = relative(resolve(src), file.path);
+      if (filepath.length === 0) continue;
+      const outfilepath = resolve(dst, filepath).replace('.jsonui', '.json');
 
-      let vani = '## Custom';
+      if (isTextFile) {
+        let [success, resultContent] = transform(Deno.readTextFileSync(file.path));
+        if (!success) continue;
+        ensureDirSync(dirname(outfilepath));
+        if (file.name.endsWith('.jsonui')) resultContent = translateToJson(resultContent!);
 
-      for (const [key, value] of Object.entries(JSONC.parse(resultContent!))) {
-        vani += '\n' + key + '=' + value;
-      }
-
-      Deno.writeTextFileSync(resolve(resourcePackPath, 'texts', `${code}.lang`), vani);
-    }
-
-    for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
-      if (!entry.path.endsWith('.png')) continue;
-      const filename = relative('pack/textures/custom', entry.path);
-      ensureDirSync(resolve(resourcePackPath, 'assets', dirname(filename)));
-      Deno.copyFileSync(entry.path, resolve(resourcePackPath, 'assets', filename));
-    }
-
-    for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-      const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
-      let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-
-      if (isJSONUI) content = translateToJson(content!);
-
-      Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
-    }
-
-    if (existsSync(resolve(resourcePackPath, 'ui', 'out'))) {
-      Deno.removeSync(resolve(resourcePackPath, 'ui', 'out'), { recursive: true });
-    }
-
-    for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-      const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
-      let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-      if (isJSONUI) content = translateToJson(content!);
-
-      ensureDirSync(resolve(resourcePackPath, 'ui', 'out', dirname(filename)));
-
-      Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', 'out', filename), content!);
-    }
-
-    for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
-      const isJSONUI = entry.path.endsWith('.jsonui');
-      let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-      if (!success) continue;
-
-      if (isJSONUI) resultContent = translateToJson(resultContent!);
-
-      const filename = relative('pack', entry.path).replace('.jsonui', '.json');
-
-      Deno.writeTextFileSync(resolve(resourcePackPath, filename), resultContent!);
-    }
-
-    if (Deno.args.includes('-w')) {
-      const watcher = Deno.watchFs('pack');
-
-      Deno.addSignalListener('SIGINT', () => {
-        watcher.close();
-      });
-
-      const handleEvent = debounce((event: Deno.FsEvent) => {
-        const entryPath = relative('pack', event.paths[0]);
-        const entryDirname = dirname(entryPath).replaceAll('\\', '/');
-
-        if (entryDirname == '.') {
-          for (const entry of walkSync('pack', { maxDepth: 1, includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) resultContent = translateToJson(resultContent!);
-            const filename = relative('pack', entry.path).replace('.jsonui', '.json');
-
-            Deno.writeTextFileSync(resolve(resourcePackPath, filename), resultContent!);
-          }
-        } else if (entryDirname.startsWith('langs')) {
-          for (const entry of walkSync('pack/langs/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-
-            const filename = relative('pack/langs', entry.path).replace('.jsonui', '.json');
-            let [success, resultContent] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) resultContent = translateToJson(resultContent!);
-            const code = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
-
-            let vani = '## Custom';
-
-            for (const [key, value] of Object.entries(JSONC.parse(resultContent!))) {
-              vani += '\n' + key + '=' + value;
-            }
-
-            Deno.writeTextFileSync(resolve(resourcePackPath, 'texts', `${code}.lang`), vani);
-          }
-        } else if (entryDirname.startsWith('textures/custom')) {
-          if (existsSync(resolve(resourcePackPath, 'assets'))) {
-            Deno.removeSync(resolve(resourcePackPath, 'assets'));
-          }
-
-          for (const entry of walkSync('pack/textures/custom', { includeDirs: false })) {
-            if (!entry.path.endsWith('.png')) continue;
-            const filename = relative('pack/textures/custom', entry.path);
-            ensureDirSync(resolve(resourcePackPath, 'assets', dirname(filename)));
-            Deno.copyFileSync(entry.path, resolve(resourcePackPath, 'assets', filename));
-          }
-        } else if (entryDirname.startsWith('ui/custom')) {
-          if (existsSync(resolve(resourcePackPath, 'ui', 'out'))) {
-            Deno.removeSync(resolve(resourcePackPath, 'ui', 'out'), { recursive: true });
-          }
-
-          for (const entry of walkSync('pack/ui/custom/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            const filename = relative('pack/ui/custom', entry.path).replace('.jsonui', '.json');
-            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) content = translateToJson(content!);
-
-            ensureDirSync(resolve(resourcePackPath, 'ui', 'out', dirname(filename)));
-            Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', 'out', filename), content!);
-          }
-        } else if (entryDirname.startsWith('ui/default')) {
-          for (const entry of walkSync('pack/ui/default/', { includeDirs: false })) {
-            const isJSONUI = entry.path.endsWith('.jsonui');
-            const filename = relative('pack/ui/default', entry.path).replace('.jsonui', '.json');
-            let [success, content] = preprocessor.process(Deno.readTextFileSync(entry.path));
-            if (!success) continue;
-            if (isJSONUI) content = translateToJson(content!);
-
-            Deno.writeTextFileSync(resolve(resourcePackPath, 'ui', filename), content!);
-          }
+        if (file.name.endsWith('.json') || file.name.endsWith('.jsonui')) {
+          if (profile.minify) resultContent = JSON.stringify(JSON.parse(stripJSONComments(resultContent!)));
+          if (profile.obfuscate) resultContent = obfuscate(resultContent!);
         }
-      }, 200);
 
-      for await (const event of watcher) {
-        handleEvent(event);
+        Deno.writeTextFileSync(outfilepath, resultContent!);
+      } else {
+        ensureDirSync(dirname(outfilepath));
+        copySync(file.path, outfilepath, { overwrite: true });
       }
+      paths.push(relative(dst, outfilepath));
+    }
+    return paths;
+  }
+
+  function copyDir(src: string, dst: string, { recursive, filter, transform }: { recursive: boolean; filter: (path: string) => boolean; transform: (filepath: string, content: string) => [boolean, string | undefined] }) {
+    for (const file of walkSync(src, { includeDirs: false, maxDepth: recursive ? 99 : 1 })) {
     }
   }
-}
 
-if (import.meta.main) {
-  await main();
+  function runProfile(profile: ConfigProfile) {
+    const folderName = ensureFromEnv(profile.packs!.resource_folder_name!);
+    const devPath = resolve(ensureFromEnv(profile.game_save_data_path!), 'development_resource_packs');
+    const folderDevPath = resolve(devPath, folderName);
+    const folderPath = resolve(ensureFromEnv(profile.game_save_data_path!), 'resource_packs', folderName);
+
+    const isLocal = config.export === 'local';
+
+    const rpPath = !isLocal ? (existsSync(devPath) ? folderDevPath : folderPath) : resolve('build');
+
+    if (!isLocal && existsSync(devPath) && existsSync(folderPath)) {
+      Deno.removeSync(folderPath, { recursive: true });
+    }
+
+    if (existsSync(rpPath)) {
+      Deno.removeSync(rpPath, { recursive: true });
+    }
+
+    Deno.mkdirSync(rpPath);
+
+    if (existsSync('out')) {
+      Deno.removeSync('out');
+    }
+    Deno.symlinkSync(rpPath, 'out');
+
+    for (const flag of [...(config.flags ?? []), ...(profile?.flags ?? [])]) {
+      context.add(createDefine(flag, 1));
+    }
+    context.add(createDefine('DEFAULT_ENTRIES', ''));
+    context.add(createDefine('CUSTOM_UI_PATH', profile.custom_ui_path));
+    context.add(createDefine('DEFAULT_TEXTURES_PATH', 'textures'));
+    context.add(createDefine('CUSTOM_TEXTURES_PATH', profile.custom_textures_path));
+
+    const preprocessor = new Preprocessor(context, config.include_paths ?? []);
+
+    if (existsSync('packs/resource/texts')) {
+      copyDirP(profile, 'packs/resource/texts', resolve(rpPath, 'texts'), true, () => true, preprocessor.process.bind(preprocessor));
+    }
+
+    if (existsSync('packs/resource/textures/custom')) {
+      copyDirP(profile, 'packs/resource/textures/custom', resolve(rpPath, 'assets'), true, (path) => path.endsWith('.png'));
+    }
+
+    if (existsSync('packs/resource/textures/default')) {
+      copyDirP(profile, 'packs/resource/textures/default', resolve(rpPath, 'textures'), true, (path) => path.endsWith('.png'));
+    }
+
+    if (existsSync('packs/resource/ui/custom')) {
+      copyDirP(profile, 'packs/resource/ui/custom', resolve(rpPath, 'ui', 'out'), true, () => true, preprocessor.process.bind(preprocessor));
+    }
+
+    if (existsSync('packs/resource/ui/default')) {
+      copyDirP(profile, 'packs/resource/ui/default', resolve(rpPath, 'ui'), true, () => true, preprocessor.process.bind(preprocessor));
+    }
+
+    if (existsSync('packs/resource')) {
+      copyDirP(profile, 'packs/resource', resolve(rpPath, '.'), false, () => true, preprocessor.process.bind(preprocessor));
+    }
+  }
+
+  function runLegacyProfile(profile: ConfigProfile) {
+    if (existsSync('out')) {
+      Deno.removeSync('out');
+    }
+    Deno.symlinkSync(ensureFromEnv(profile.minecraft_data_path!), 'out');
+
+    const isLocal = config.export === 'local';
+    const mcdatapath = ensureFromEnv(profile.minecraft_data_path!);
+    const outpath = isLocal ? 'build' : ensureFromEnv(profile.minecraft_data_path!);
+
+    if (isLocal) {
+      if (existsSync(outpath)) {
+        Deno.removeSync(outpath, { recursive: true });
+      }
+      Deno.mkdirSync(outpath);
+    }
+
+    for (const flag of [...(config.flags ?? []), ...(profile?.flags ?? [])]) {
+      context.add(createDefine(flag, 1));
+    }
+    context.add(createDefine('DEFAULT_ENTRIES', ''));
+    context.add(createDefine('CUSTOM_UI_PATH', profile.custom_ui_path));
+    context.add(createDefine('DEFAULT_TEXTURES_PATH', 'textures'));
+    context.add(createDefine('CUSTOM_TEXTURES_PATH', profile.custom_textures_path));
+
+    const preprocessor = new Preprocessor(context, config.include_paths ?? []);
+
+    const langFolderName = getMCPEVersionNumerically(ensureFromEnv(config.target_version)) >= getMCPEVersionNumerically('MCPE_0_14') ? 'loc' : 'lang';
+
+    if (!existsSync(resolve(mcdatapath, 'ui_backup'))) {
+      console.log('Backuping ui folder');
+      copySync(resolve(mcdatapath, 'ui'), resolve(mcdatapath, 'ui_backup'));
+    }
+
+    if (!existsSync(resolve(mcdatapath, langFolderName + '_backup'))) {
+      console.log('Backuping lang folder');
+      copySync(resolve(mcdatapath, langFolderName), resolve(mcdatapath, langFolderName + '_backup'));
+    }
+
+    if (!existsSync(resolve(mcdatapath, 'images_backup'))) {
+      console.log('Backuping images folder');
+      copySync(resolve(mcdatapath, 'images'), resolve(mcdatapath, 'images_backup'));
+    }
+
+    if (!isLocal) {
+      if (existsSync(resolve(outpath, 'ui/out'))) {
+        Deno.removeSync(resolve(outpath, 'ui/out'), { recursive: true });
+      }
+
+      copySync(resolve(mcdatapath, 'ui_backup'), resolve(mcdatapath, 'ui'), { overwrite: true });
+    }
+
+    if (existsSync('packs/resource/textures/custom')) {
+      copyDirP(profile, 'packs/resource/textures/custom', resolve(outpath, 'images/out'), true, (path) => path.endsWith('.png'));
+    }
+
+    if (existsSync('packs/resource/ui/custom')) {
+      const paths = copyDirP(profile, 'packs/resource/ui/custom', resolve(outpath, 'ui/out'), true, () => true, preprocessor.process.bind(preprocessor));
+      const j = JSONC.parse(Deno.readTextFileSync(resolve(outpath, 'ui', '_ui_defs.json')));
+      paths.forEach((it) => j.ui_defs.push('ui/out/' + it.replaceAll('\\', '/')));
+      Deno.writeTextFileSync(resolve(outpath, 'ui', '_ui_defs.json'), JSON.stringify(j, null, 2));
+    }
+
+    if (existsSync('packs/resource/ui/default')) {
+      copyDirP(profile, 'packs/resource/ui/default', resolve(outpath, 'ui'), true, () => true, preprocessor.process.bind(preprocessor));
+    }
+
+    if (existsSync('packs/resource')) {
+      copyDirP(profile, 'packs/resource', resolve(outpath), false, () => true, preprocessor.process.bind(preprocessor));
+    }
+  }
 }

@@ -1,10 +1,11 @@
+#include "helpers/props"
 {
   namespace = "kmjava_container",
 
   screen_background = {
     type = "image",
     texture = "CUSTOM_TEXTURES_PATH/screen_background.png",
-    layer = -10,
+    LAYER_PROP(-10),
     alpha = 0.75,
     uv = [0, 0],
     uv_size = [1, 2]
@@ -17,9 +18,67 @@
     anchor_to = "top_left",
     alignment = "top_left",
     color = [0.25, 0.25, 0.25, 1.0],
-    layer = 2
+    LAYER_PROP(2)
   },
 
+#ifdef TOUCH
+#ifdef USE_CLOSE_BUTTON_FOR_TOUCH
+  container_close_panel@common.button = {
+    offset = [20, 0],
+    size = [14, 14],
+    controls = [
+      {
+        default@kmjava_container.screen_background = {
+          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button.png",
+          uv = [0, 0],
+          uv_size = [14, 14],
+          size = [14, 14],
+          alpha = 1.0,
+          LAYER_PROP(1)
+        }
+      },
+      {
+        hover@kmjava_container.screen_background = {
+          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button_highlighted.png",
+          uv = [0, 0],
+          uv_size = [14, 14],
+          size = [14, 14],
+          alpha = 1.0,
+          LAYER_PROP(1)
+        }
+      },
+      {
+        pressed@kmjava_container.screen_background = {
+          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button_highlighted.png",
+          uv = [0, 0],
+          uv_size = [14, 14],
+          size = [14, 14],
+          alpha = 1.0,
+          LAYER_PROP(1)
+        }
+      }
+    ],
+#else
+  container_close_panel = {
+    type = "input_panel",
+#endif
+    anchor_from = "top_right",
+    anchor_to = "top_right",
+    LAYER_PROP(12),
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.menu_exit",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.menu_exit",
+        condition = "focus"
+      }
+    ]
+  },
+#endif
 
 #if MCPE_CURRENT >= MCPE_0_14
   container_slot_button_prototype = {
@@ -193,8 +252,42 @@
   },
 
 #else
+  root_panel = {
+    type = "panel",
+    size = [176, 166],
+    anchor_from = "center",
+    anchor_to = "center"
+  },
 
-  inventory_item_icon@common.item_renderer = {    
+  item_renderer = {
+    type = "custom",
+    renderer = "inventory_item_renderer",
+    LAYER_PROP(6),
+    offset = [ 1.5, 0 ]
+  },
+
+  item_foil_renderer@kmjava_container.item_renderer = {
+    renderer = "inventory_foil_item_renderer",
+    LAYER_PROP(7)
+  },
+
+  hover_text = {
+    type =  "custom",
+    renderer =  "hover_text_renderer",
+    LAYER_PROP(16)
+  },
+
+  highlight_slot = {
+    type = "image",
+    texture = "gui/gui.png",
+    size = [ 16, 16 ],
+    LAYER_PROP(10),
+    alpha = 0.5,
+    uv = [ 13, 196 ],
+    uv_size = [ 1, 1 ]
+  },
+
+  inventory_item_icon@kmjava_container.item_renderer = {    
     binding_collection_name = "inventory_items",
     bindings = [
       {
@@ -204,7 +297,7 @@
     ] 
   },
 
-  inventory_item_foil@common.item_foil_renderer = {
+  inventory_item_foil@kmjava_container.item_foil_renderer = {
     binding_collection_name = "inventory_items",
     bindings = [
       {
@@ -212,15 +305,38 @@
         binding_type = "collection"
       }
     ] 
+  },
+
+  stack_count_label = {
+    type = "label",
+    anchor_from = "bottom_right",
+    anchor_to = "bottom_right",
+#if MCPE_CURRENT == MCPE_0_12
+    alignment = "right",
+    size = [1, 1],
+    offset = [0, -7],
+#else
+    alignment = "bottom_right",
+    offset = [0, -8],
+#endif
+    LAYER_PROP(10),
+    shadow = true,
+    text = "#inventory_stack_count",
+    bindings = [
+      {
+        binding_name = "#inventory_stack_count",
+        binding_type = "collection"
+      }
+    ]
   },
 
   container_slot_button_prototype = {
     type = "button",
-    layer = 1,
+    LAYER_PROP(1),
     focus_enabled = true,
     hover_control = "hover",
     pressed_control = "pressed",
-     button_mappings = [
+    button_mappings = [
       {
         from_button_id = "button.menu_select",
         to_button_id = "button.inventory_take_all_place_all",
@@ -275,12 +391,61 @@
 
   inventory_slot_button_prototype@kmjava_container.container_slot_button_prototype = {
     binding_collection_name = "inventory_items",
+#if MCPE_CURRENT == MCPE_0_12
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.inventory_take_all_place_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.inventory_take_all_place_all",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_secondary_select",
+        to_button_id = "button.inventory_take_half_place_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_select",
+        to_button_id = "button.inventory_take_half_place_one",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_auto_place",
+        to_button_id = "button.inventory_auto_place",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_secondary_select",
+        to_button_id = "button.inventory_auto_place",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop",
+        to_button_id = "button.inventory_drop_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop_all",
+        to_button_id = "button.inventory_drop_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_double_select",
+        to_button_id = "button.inventory_coalesce_stack",
+        condition = "hover"
+      }
+    ],
+#endif
     controls = [
       {
-        hover@common.highlight_slot = {
+        hover@kmjava_container.highlight_slot = {
           controls = [
             {
-              armor_hover_text@common.hover_text = {
+              armor_hover_text@kmjava_container.hover_text = {
                 binding_collection_name = "inventory_items",
                 bindings = [
                   {
@@ -294,10 +459,10 @@
         }
       },
       {
-        pressed@common.highlight_slot = {
+        pressed@kmjava_container.highlight_slot = {
           controls = [
             {
-              armor_hover_text@common.hover_text = {
+              armor_hover_text@kmjava_container.hover_text = {
                 binding_collection_name = "inventory_items",
                 bindings = [
                   {
@@ -315,13 +480,13 @@
 
   inventory_grid_item = {
     type = "grid_item",
-    layer = 1,
+    LAYER_PROP(1),
     size = [ 18, 18 ],
     anchor_from = "top_left",
     anchor_to = "top_left",
     controls = [
       {
-        stack@common.stack_count_label = {        
+        stack@kmjava_container.stack_count_label = {        
           binding_collection_name = "inventory_items"
         }
       },
@@ -329,14 +494,14 @@
       { item_foil@kmjava_container.inventory_item_foil = {}},
       { slot_button@kmjava_container.inventory_slot_button_prototype = {}},
       {
-        durability@common.durability_bar = {        
+        durability@kmjava_container.durability_bar = {        
           binding_collection_name = "inventory_items"
         }
       }
     ]
   },
 
-  hotbar_item_icon@common.item_renderer = {    
+  hotbar_item_icon@kmjava_container.item_renderer = {    
     binding_collection_name = "hotbar_items",
     bindings = [
       {
@@ -346,7 +511,7 @@
     ] 
   },
 
-  hotbar_item_foil@common.item_foil_renderer = {
+  hotbar_item_foil@kmjava_container.item_foil_renderer = {
     binding_collection_name = "hotbar_items",
     bindings = [
       {
@@ -358,12 +523,61 @@
 
   hotbar_slot_button_prototype@kmjava_container.container_slot_button_prototype = {
     binding_collection_name = "hotbar_items",
+#if MCPE_CURRENT == MCPE_0_12
+    button_mappings = [
+      {
+        from_button_id = "button.menu_select",
+        to_button_id = "button.hotbar_take_all_place_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_ok",
+        to_button_id = "button.hotbar_take_all_place_all",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_secondary_select",
+        to_button_id = "button.hotbar_take_half_place_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_select",
+        to_button_id = "button.hotbar_take_half_place_one",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_auto_place",
+        to_button_id = "button.hotbar_auto_place",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.controller_secondary_select",
+        to_button_id = "button.hotbar_auto_place",
+        condition = "focus"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop",
+        to_button_id = "button.hotbar_drop_one",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_inventory_drop_all",
+        to_button_id = "button.hotbar_drop_all",
+        condition = "hover"
+      },
+      {
+        from_button_id = "button.menu_double_select",
+        to_button_id = "button.hotbar_coalesce_stack",
+        condition = "hover"
+      }
+    ],
+#endif
     controls = [
       {
-        hover@common.highlight_slot = {
+        hover@kmjava_container.highlight_slot = {
           controls = [
             {
-              armor_hover_text@common.hover_text = {
+              armor_hover_text@kmjava_container.hover_text = {
                 binding_collection_name = "hotbar_items",
                 bindings = [
                   {
@@ -377,10 +591,10 @@
         }
       },
       {
-        pressed@common.highlight_slot = {
+        pressed@kmjava_container.highlight_slot = {
           controls = [
             {
-              armor_hover_text@common.hover_text = {
+              armor_hover_text@kmjava_container.hover_text = {
                 binding_collection_name = "hotbar_items",
                 bindings = [
                   {
@@ -398,18 +612,18 @@
 
   hotbar_grid_item = {
     type = "grid_item",
-    layer = 1,
+    LAYER_PROP(1),
     size = [ 18, 18 ],
     anchor_to = "top_left",
     anchor_from = "top_left",
     controls = [
       {
-        stack@common.stack_count_label = {
+        stack@kmjava_container.stack_count_label = {
           binding_collection_name = "hotbar_items"
         }
       },
       {
-        durability@common.durability_bar = {
+        durability@kmjava_container.durability_bar = {
           binding_collection_name = "hotbar_items"
         }
       },
@@ -450,6 +664,7 @@
     ]
   },
 
+#if MCPE_CURRENT > MCPE_0_12
   inventory_hotbar_panel_with_label@kmjava_container.inventory_hotbar_panel = {
     +controls = [
       {
@@ -462,13 +677,14 @@
       }
     ]
   },
+#endif
 
   inventory_selected_stack_size_text = {
     type = "label",
     anchor_from = "bottom_right",
     anchor_to = "bottom_right",
     alignment = "bottom_right",
-    layer = 1,
+    LAYER_PROP(1),
     shadow = true,
     text = "#inventory_selected_item_stack_count",
     offset = [-1, -8],
@@ -477,7 +693,7 @@
     ]
   },
 
-  inventory_selected_icon@common.item_renderer = {
+  inventory_selected_icon@kmjava_container.item_renderer = {
     size = [18, 18],
     layer = 100,
     bindings = [
@@ -491,11 +707,40 @@
     ]
   },
 
+  durability_bar = {
+    type = "custom",
+    renderer = "progress_bar_renderer",
+    LAYER_PROP(15),
+    offset = [ 0, 5 ],
+    size = [ 12, 1 ],
+    property_bag = {
+      is_durability = true,
+      round_value = true
+    },
+    bindings = [
+      {
+        binding_name = "#item_durability_visible",
+        binding_name_override = "#progress_bar_visible",
+        binding_type = "collection"
+      },
+      {
+        binding_name = "#item_durability_total_amount",
+        binding_name_override = "#progress_bar_total_amount",
+        binding_type = "collection"
+      },
+      {
+        binding_name = "#item_durability_current_amount",
+        binding_name_override = "#progress_bar_current_amount",
+        binding_type = "collection"
+      }
+    ]
+  },
+
   // Mojang why is not working?
-  durability_bar_grabbed@common.durability_bar = {
-    layer = 100,
-    offset = [-2, 5],
-    size = [16, 1],
+  durability_bar_grabbed@kmjava_container.durability_bar = {
+    LAYER_PROP(100),
+    offset = [0, 5],
+    size = [12, 1],
     bindings = [
       {
         binding_name = "#item_durability_visible",
@@ -518,7 +763,7 @@
     default_control = "default",
     hover_control = "hover",
     pressed_control = "pressed",
-    layer = -10,
+    LAYER_PROP(-10),
     size = [18, 18],
     offset = [0, 0],
     follows_cursor = true,

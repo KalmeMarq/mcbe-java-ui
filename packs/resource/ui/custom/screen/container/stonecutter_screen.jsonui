@@ -1,0 +1,108 @@
+#ignore MCPE_CURRENT > MCPE_0_12
+{
+  namespace = "kmjava_stonecutter",
+
+  container_bg = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/container/crafting_table.png",
+    z_order = 2,
+    size = [176, 166],
+    uv = [0, 0],
+    uv_size = [176, 166]
+  },
+
+  output_slot = {
+    type = "panel",
+    size = [18, 18],
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [123, 34],
+    controls = [
+      {
+        item@kmjava_container.item_renderer = {
+          bindings = [
+            {
+              binding_name = "#stone_cutter_output_item",
+              binding_name_override = "#item_id_aux"
+            }      
+          ] 
+        }
+      },
+      {
+        slot_button@kmjava_crafting.output_slot_button = {
+          controls = [
+            {
+              hover@kmjava_container.highlight_slot = {
+                controls = [
+                  {
+                    hover_text@kmjava_container.hover_text = {
+                      bindings = [
+                        {
+                          binding_name = "#stone_cutter_output_hover_text",
+                          binding_name_override =  "#hover_text"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              pressed@kmjava_container.highlight_slot = {
+                controls = [
+                  {
+                    hover_text@kmjava_container.hover_text = {
+                      bindings = [
+                        {
+                          binding_name = "#stone_cutter_output_hover_text",
+                          binding_name_override =  "#hover_text"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        stack@kmjava_container.stack_count_label = {
+          bindings = [
+            {
+              binding_name = "#stone_cutter_output_item_stack_count",
+              binding_name_override = "#inventory_stack_count"
+            }
+          ] 
+        }
+      }
+    ]
+  },
+
+  screen_content = {
+    type = "panel",
+    controls = [
+      { bg@kmjava_container.screen_background = {} },
+      #if defined(TOUCH) && !defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+        { close@kmjava_container.container_close_panel = { size = ["50% - 88px", "40%"] } },
+      #endif
+      {
+        root@kmjava_container.root_panel = {
+          controls = [
+            { bg@kmjava_stonecutter.container_bg = {} },
+            #if defined(TOUCH) && defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+              { close@kmjava_container.container_close_panel = {} },
+            #endif
+            { inventory@kmjava_container.inventory_hotbar_panel = {} },
+            { title@kmjava_crafting.container_title = { text = "container.stonecutter" } },
+            { crafting_grid@kmjava_crafting.crafting_grid = {} },
+            { output@kmjava_stonecutter.output_slot = {} },
+            { crafting_selected_icon_button@kmjava_crafting.crafting_selected_icon_button = {} },
+            { crafting_selected_foil_button@kmjava_crafting.crafting_selected_foil_button = {} },
+            { crafting_hold_icon_button@kmjava_crafting.crafting_hold_icon_button = {} }
+          ]
+        }
+      }
+    ]
+  }
+}

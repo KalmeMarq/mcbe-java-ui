@@ -1,0 +1,39 @@
+target_version = 'env:TARGET_VERSION'
+flags = [
+  'SHOW_PLAYER_NAME'
+]
+include_paths = ['packs/resource/include']
+export = 'development'
+
+[[profiles]]
+version = 'MCPE_0_12'
+minecraft_data_path = 'env:MCPE_0_12_DATA_PATH'
+custom_textures_path = "out"
+custom_ui_path = "ui/out"
+
+[[profiles]]
+version = 'MCPE_0_13'
+minecraft_data_path = 'env:MCPE_0_13_DATA_PATH'
+custom_textures_path = "out"
+custom_ui_path = "ui/out"
+
+[[profiles]]
+version = 'MCPE_0_14'
+minecraft_data_path = 'env:MCPE_0_14_DATA_PATH'
+custom_textures_path = "out"
+custom_ui_path = "ui/out"
+
+[[profiles]]
+version = 'MCPE_0_15'
+minecraft_data_path = 'env:MCPE_0_15_DATA_PATH'
+custom_textures_path = "out"
+custom_ui_path = "ui/out"
+
+[[profiles]]
+version = '>=MCPE_0_16'
+game_save_data_path = 'env:MCPE_GAME_SAVE_DATA_PATH'
+custom_textures_path = "assets"
+custom_ui_path = "ui/out"
+
+[profiles.packs]
+resource_folder_name = 'Java UI - KM'

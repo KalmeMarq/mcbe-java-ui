@@ -1,3 +1,4 @@
+#include "helpers/props"
 #include "helpers/button"
 {
   namespace = "kmjava_title",
@@ -204,13 +205,12 @@
     size = [ 50, 10 ],
 #if MCPE_CURRENT < MCPE_0_13
     alignment = "right",
-    z_order = 2,
     offset = [38, 0],
 #else
     offset = [54, 0],
     alignment = "top_left",
-    layer = 2,
 #endif
+    LAYER_PROP(2),
     text = "#version",
     shadow = true,
     anchor_from = "bottom_left",
@@ -226,11 +226,16 @@
     size = [15, 15],
     uv_size = [15, 15],
     uv = [0, 0],
-#if MCPE_CURRENT < MCPE_0_13
-    z_order = 4
-#else
-    layer = 4
-#endif
+    LAYER_PROP(4)
+  },
+
+  feedback_icon = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/toast/social_interactions.png",
+    size = [20, 20],
+    uv_size = [20, 20],
+    uv = [0, 0],
+    LAYER_PROP(4)
   },
 
   title = {
@@ -311,38 +316,13 @@
   language_button@kmjava_button.button = {
     size = [20, 20],
     BUTTON_MAPPINGS_NAME("button.menu_language"),
-    controls = [
-      {
-        default = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_20_left_default_background = {} },
-            { right@kmjava_button.button_20_right_default_background = {} },
-            { icon@kmjava_title.language_icon = {} }
-          ]
-        }
-      },
-      {
-        hover = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_20_left_hover_background = {} },
-            { right@kmjava_button.button_20_right_hover_background = {} },
-            { icon@kmjava_title.language_icon = {} }
-          ]
-        }
-      },
-      {
-        pressed = {
-          type = "panel",
-          controls = [
-            { left@kmjava_button.button_20_left_hover_background = {} },
-            { right@kmjava_button.button_20_right_hover_background = {} },
-            { icon@kmjava_title.language_icon = {} }
-          ]
-        }
-      }
-    ]
+    BUTTON_20_CONTROLS_WITH_ICON(kmjava_title.language_icon)
+  },
+
+  feedback_button@kmjava_button.button = {
+    size = [20, 20],
+    BUTTON_MAPPINGS_NAME("button.menu_feedback"),
+    BUTTON_20_CONTROLS_WITH_ICON(kmjava_title.feedback_icon)
   },
 
   settings_button@kmjava_button.button = {
@@ -364,12 +344,15 @@
     anchor_to = "top_middle",
     offset = [0, "25% + 48px"],
     controls = [
+#save BUTTON_LIST
       { play_button@kmjava_title.play_button = { offset = [0, 0] } },
       { achievements_button@kmjava_title.achievements_button = { offset = [0, 24] } },
       { skins_button@kmjava_title.skins_button = { offset = [0, 48] } },
       { language_button@kmjava_title.language_button = { offset = [-114, 90] } },
+      { feedback_button@kmjava_title.feedback_button = { offset = [114, 90] } },
       { settings_button@kmjava_title.settings_button = { offset = [-51, 90] } },
-      { quit_button@kmjava_title.quit_button = { offset = [51, 90] } }
+      { quit_button@kmjava_title.quit_button = { offset = [51, 90] } },
+#endsave
     ]
   },
 
@@ -385,12 +368,7 @@
     anchor_to = "top_middle",
     offset = [0, "25% + 48px"],
     controls = [
-      { play_button@kmjava_title.play_button = { offset = [0, 0] } },
-      { achievements_button@kmjava_title.achievements_button = { offset = [0, 24] } },
-      { skins_button@kmjava_title.skins_button = { offset = [0, 48] } },
-      { language_button@kmjava_title.language_button = { offset = [-114, 90] } },
-      { settings_button@kmjava_title.settings_button = { offset = [-51, 90] } },
-      { quit_button@kmjava_title.quit_button = { offset = [51, 90] } },
+      #paste BUTTON_LIST
       { buy_game_button@kmjava_title.buy_game_button = { offset = [0, 114] } }
     ]
   },
@@ -398,15 +376,35 @@
   screen_content = {
     type = "panel",
     controls = [
+#save SCREEN_CONTENT
       {
         menu_background = {
           type = "custom",
           renderer = "menu_background_renderer"
         }
       },
+#if SHOW_PLAYER_NAME
+      {
+        player_name = {
+          type = "label",
+          text = "#playername",
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          alignment = "left",
+          size = [48, 1],
+          offset = [2, -20],
+          shadow = true,
+          LAYER_PROP(2),
+          bindings = [
+            { binding_name = "#playername" }
+          ]
+        }
+      },
+#endif
       { version@kmjava_title.version = {} },
       { copyright@kmjava_title.copyright_text = {} },
       { title@kmjava_title.title = {} },
+#endsave
       { buttons@kmjava_title.buttons_panel = {} }
     ]
   },
@@ -414,15 +412,7 @@
   trial_screen_content = {
     type = "panel",
     controls = [
-      {
-        menu_background = {
-          type = "custom",
-          renderer = "menu_background_renderer"
-        }
-      },
-      { version@kmjava_title.version = {} },
-      { copyright@kmjava_title.copyright_text = {} },
-      { title@kmjava_title.title = {} },
+#paste SCREEN_CONTENT
       { buttons@kmjava_title.trial_buttons_panel = {} }
     ]
   }

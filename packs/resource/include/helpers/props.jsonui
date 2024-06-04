@@ -1,0 +1,5 @@
+#if MCPE_CURRENT < MCPE_0_13
+  #define LAYER_PROP(value) z_order = ##value##
+#else
+  #define LAYER_PROP(value) layer = ##value##
+#endif

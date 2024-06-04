@@ -25,7 +25,11 @@
       uuid = PACK_MODULE_UUID,
       type = "resources"
     }
-  ]
+  ],
+  metadata = {
+    authors = "KalmeMarq",
+    url = ""
+  }
 #else
   header = {
     pack_id = PACK_UUID,
