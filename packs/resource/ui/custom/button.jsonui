@@ -13,17 +13,17 @@
     controls = [
       {
         default@kmjava_button.button_state = {
-          $button_txr = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button.png"
+          $button_txr = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button")
         }
       },
       {
         hover@kmjava_button.button_state = {
-          $button_txr = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png"
+          $button_txr = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted")
         }
       },
       {
         pressed@kmjava_button.button_state = {
-          $button_txr = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted.png"
+          $button_txr = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button_highlighted")
         }
       }
     ]
@@ -39,7 +39,7 @@
 
   button_state = {
     type = "panel",
-    $button_txr|default = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button.png",
+    $button_txr|default = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/button"),
     $button_text_color|default = COLOR_RGB(255, 255, 255),
     $button_content|default = "kmjava_button.button_label",
     controls = [

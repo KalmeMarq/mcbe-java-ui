@@ -358,23 +358,17 @@
     sound_pitch = 1.0,
     always_handle_pointer = true,
     controls = [
-      {default@kmjava_crafting.crafting_hold_icon = {
-      }},
-      {pressed@kmjava_crafting.crafting_hold_icon = {
-      }},
-      {hover@kmjava_crafting.crafting_hold_icon = {
-      }}
+      { default@kmjava_crafting.crafting_hold_icon = {} },
+      { pressed@kmjava_crafting.crafting_hold_icon = {} },
+      { hover@kmjava_crafting.crafting_hold_icon = {} }
     ]
   },
 
   crafting_selected_foil_button@kmjava_crafting.crafting_selected_icon_button = {
     controls = [
-      { default@kmjava_crafting.crafting_selected_foil = {
-      }},
-      { pressed@kmjava_crafting.crafting_selected_foil = {
-      }},
-      { hover@kmjava_crafting.crafting_selected_foil = {
-      }}
+      { default@kmjava_crafting.crafting_selected_foil = {} },
+      { pressed@kmjava_crafting.crafting_selected_foil = {} },
+      { hover@kmjava_crafting.crafting_selected_foil = {} }
     ]
   },
 
@@ -392,7 +386,7 @@
             #if defined(TOUCH) && defined(USE_CLOSE_BUTTON_FOR_TOUCH)
               { close@kmjava_container.container_close_panel = {} },
             #endif
-            { inventory@kmjava_container.inventory_hotbar_panel = {} },
+            { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
             { title@kmjava_crafting.container_title = {} },
             { crafting_grid@kmjava_crafting.crafting_grid = {} },
             { output@kmjava_crafting.output_slot = {} },

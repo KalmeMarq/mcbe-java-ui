@@ -29,7 +29,7 @@ const DIRECTIVES_REGEX = {
   ENDEXCLUDE: /^#endexclude\s*/,
   FOR: /^#for\s(?<start>\w+)\s+@\s+(?<end>\w+)\s*/,
   ENDFOR: /^#endfor\s*/,
-  INCLUDE: /^#include\s+"(?<file>[a-zA-Z0-9./_]+)"/,
+  INCLUDE: /^#(?<type>\[[a-zA-Z-0-9]\]+)?include\s+"(?<file>[a-zA-Z0-9.\/_]+)"/,
   SAVE: /^#save\s+(?<save>\w+)/,
   ENDSAVE: /^#endsave\s*/,
   PASTE: /^#paste\s+(?<save>\w+)/
@@ -43,6 +43,13 @@ interface ExpressionHandler {
   evalValue(value: any): any;
   withContext(context: DefineContext): ExpressionHandler;
   [key: string]: any;
+}
+
+function removeQuotes(value: string) {
+  if (value.length > 1 && value[0] === '"' && value[value.length - 1] === '"') {
+    return value.slice(1, -1);
+  }
+  return value;
 }
 
 function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): { result: any; isIdentifier?: boolean } {
@@ -80,6 +87,9 @@ function jsepEval(expression: jsep.Expression, handler: ExpressionHandler): { re
 
     switch (expression.operator) {
       case '+':
+        if (typeof left === 'string' || typeof right === 'string') {
+          return { result: '"' + (removeQuotes(left) + removeQuotes(right)) + '"' };
+        }
         return { result: left + right };
       case '-':
         return { result: left - right };
@@ -186,7 +196,7 @@ export function createDefineFunc(name: string, args: string[], value: string | n
     args,
     type: 'function',
     value,
-    cachedRegex: new RegExp('\\b' + name + '\\(([a-zA-Z0-9_]+\\s*=\\s*)?([a-z-+._A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")\\s*(\\s*,\\s*([a-zA-Z0-9_]+\\s*=\\s*)?\\s*([a-z-+._A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")){0,}\\)')
+    cachedRegex: new RegExp('\\b' + name + '\\(([a-zA-Z0-9_]+\\s*=\\s*)?([a-z-+._A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")\\s*(\\s*,\\s*([a-zA-Z0-9_]+\\s*=\\s*)?\\s*([a-z-+._/A-Z0-9]+|"[a-z_\\\\\\-/+.A-Z0-9%]+")){0,}\\)')
   };
 }
 
@@ -312,7 +322,7 @@ const exprHandler: ExpressionHandler = {
 function translateToJson(content: string) {
   return content
     .replace(/\r\n/gm, '\n')
-    .replace(/(?!({[\n ]*))[a-zA-Z_+0-9|$\:.@]+ = /gm, (a, b, c, d) => {
+    .replace(/(?!({[\n ]*))[a-zA-Z_+0-9#|$\:.@]+ = /gm, (a, b, c, d) => {
       return '"' + a.substring(0, a.indexOf('=')).trim() + '": ';
     })
     .replace(/(?<=^[ ]*)#.+/gm, (a) => {
@@ -325,6 +335,7 @@ function removeTrailingCommas(content: string) {
 }
 
 export class Preprocessor {
+  private static _cachedPathPreprocessors: Record<string, Preprocessor> = {};
   private _parentContext?: DefineContext;
   private _context: DefineContext;
   private _excluding = false;
@@ -369,6 +380,9 @@ export class Preprocessor {
             .map((it) => {
               if (it.includes('=')) {
                 return { key: it.split('=')[0].trim(), value: it.split('=')[1].trim() };
+              }
+              if (it.startsWith("'") && it.endsWith("'")) {
+                return { value: it.slice(1, -1) };
               }
               return { value: it };
             });
@@ -465,7 +479,8 @@ export class Preprocessor {
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IFNDEF)) != null) {
         this._ifs.push(!this._context.has(match['define']));
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ELIF)) != null) {
-        this._ifs[this._ifs.length - 1] = Boolean(this.evaluate(match['expression'])) == true;
+        if (!this._ifs[this._ifs.length - 1]) this._ifs[this._ifs.length - 1] = Boolean(this.evaluate(match['expression'])) == true;
+        else this._ifs[this._ifs.length - 1] = false;
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ELSE)) != null) {
         this._ifs[this._ifs.length - 1] = !this._ifs[this._ifs.length - 1];
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ENDIF)) != null) {
@@ -499,13 +514,23 @@ export class Preprocessor {
         const includeFile = trimmedLine.split(' ').slice(1).join(' ').slice(1, -1);
 
         for (const includePath of this._includePaths) {
-          if (!existsSync(resolve(includePath, includeFile + '.jsonui'))) continue;
+          const path = resolve(includePath, includeFile + '.jsonui');
+
+          if (path in Preprocessor._cachedPathPreprocessors) {
+            for (const define of Preprocessor._cachedPathPreprocessors[path].getContext().getDefines()) {
+              this._context.add(define);
+            }
+            continue;
+          }
+
+          if (!existsSync(path)) continue;
 
           const tempPreprocessor = new Preprocessor(this._parentContext, this._includePaths);
-          tempPreprocessor.process(Deno.readTextFileSync(resolve('packs/resource/include', includeFile + '.jsonui')));
+          tempPreprocessor.process(Deno.readTextFileSync(path));
           for (const define of tempPreprocessor.getContext().getDefines()) {
             this._context.add(define);
           }
+          Preprocessor._cachedPathPreprocessors[path] = tempPreprocessor;
         }
       } else if (this.canProcess()) {
         if (lines[i].trim().length === 0) {
@@ -551,6 +576,10 @@ if (import.meta.main) {
 
   function ensureFromEnv(value: string) {
     return value.startsWith('env:') ? env[value.substring('env:'.length)] : value;
+  }
+
+  if (env['FLAGS']) {
+    config.flags = [...env['FLAGS'].split(',').map((it) => it.trim()), ...(config.flags ?? [])];
   }
 
   const profile = config.profiles?.find((it) => {
@@ -640,11 +669,14 @@ if (import.meta.main) {
     const folderPath = resolve(ensureFromEnv(profile.game_save_data_path!), 'resource_packs', folderName);
 
     const isLocal = config.export === 'local';
+    const versionHasDev = getMCPEVersionNumerically(ensureFromEnv(config.target_version)) >= getMCPEVersionNumerically('MCPE_1_2');
 
-    const rpPath = !isLocal ? (existsSync(devPath) ? folderDevPath : folderPath) : resolve('build');
+    const rpPath = !isLocal ? (versionHasDev ? folderDevPath : folderPath) : resolve('build');
 
-    if (!isLocal && existsSync(devPath) && existsSync(folderPath)) {
+    if (!isLocal && versionHasDev && existsSync(folderPath)) {
       Deno.removeSync(folderPath, { recursive: true });
+    } else if (!isLocal && !versionHasDev && existsSync(folderDevPath)) {
+      Deno.removeSync(folderDevPath, { recursive: true });
     }
 
     if (existsSync(rpPath)) {
@@ -653,10 +685,20 @@ if (import.meta.main) {
 
     Deno.mkdirSync(rpPath);
 
+    if (existsSync('out/mcdata')) {
+      Deno.removeSync('out/mcdata');
+    }
+    if (existsSync('out/rp')) {
+      Deno.removeSync('out/rp');
+    }
     if (existsSync('out')) {
       Deno.removeSync('out');
     }
-    Deno.symlinkSync(rpPath, 'out');
+    Deno.mkdirSync('out');
+    if (env[ensureFromEnv(config.target_version) + '_DATA_PATH'] != null) {
+      Deno.symlinkSync(env[ensureFromEnv(config.target_version) + '_DATA_PATH'], 'out/mcdata');
+    }
+    Deno.symlinkSync(rpPath, 'out/rp');
 
     for (const flag of [...(config.flags ?? []), ...(profile?.flags ?? [])]) {
       context.add(createDefine(flag, 1));
@@ -681,7 +723,10 @@ if (import.meta.main) {
     }
 
     if (existsSync('packs/resource/ui/custom')) {
-      copyDirP(profile, 'packs/resource/ui/custom', resolve(rpPath, 'ui', 'out'), true, () => true, preprocessor.process.bind(preprocessor));
+      const paths = copyDirP(profile, 'packs/resource/ui/custom', resolve(rpPath, 'ui', 'out'), true, () => true, preprocessor.process.bind(preprocessor));
+      const j = { ui_defs: [] as string[] };
+      paths.forEach((it) => j.ui_defs.push('ui/out/' + it.replaceAll('\\', '/')));
+      Deno.writeTextFileSync(resolve(rpPath, 'ui', '_ui_defs.json'), JSON.stringify(j, null, 2));
     }
 
     if (existsSync('packs/resource/ui/default')) {
@@ -694,6 +739,12 @@ if (import.meta.main) {
   }
 
   function runLegacyProfile(profile: ConfigProfile) {
+    if (existsSync('out/mcdata')) {
+      Deno.removeSync('out/mcdata');
+    }
+    if (existsSync('out/rp')) {
+      Deno.removeSync('out/rp');
+    }
     if (existsSync('out')) {
       Deno.removeSync('out');
     }

@@ -4,7 +4,7 @@
 
   screen_background = {
     type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/screen_background.png",
+    texture = TXR_PATH("CUSTOM_TEXTURES_PATH/screen_background"),
     LAYER_PROP(-10),
     alpha = 0.75,
     uv = [0, 0],
@@ -29,7 +29,7 @@
     controls = [
       {
         default@kmjava_container.screen_background = {
-          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button.png",
+          texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button"),
           uv = [0, 0],
           uv_size = [14, 14],
           size = [14, 14],
@@ -39,7 +39,7 @@
       },
       {
         hover@kmjava_container.screen_background = {
-          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button_highlighted.png",
+          texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button_highlighted"),
           uv = [0, 0],
           uv_size = [14, 14],
           size = [14, 14],
@@ -49,7 +49,7 @@
       },
       {
         pressed@kmjava_container.screen_background = {
-          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button_highlighted.png",
+          texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/widget/cross_button_highlighted"),
           uv = [0, 0],
           uv_size = [14, 14],
           size = [14, 14],
@@ -673,6 +673,50 @@
           anchor_to = "bottom_left",
           offset =  [0, -85],
           text = "container.inventory"
+        }
+      }
+    ]
+  },
+#else
+  inventory_hotbar_panel_with_label = {
+    type = "panel",
+    size = [162, 1],
+    anchor_from = "bottom_left",
+    anchor_to = "bottom_left",
+    offset = [7, -7],
+    controls = [
+      {
+        inventory_label = {
+          type = "label",
+          LAYER_PROP(5),
+          size = [ 1, 1 ],
+          alignment = "left",
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          offset =  [0, -85],
+          text = "container.inventory",
+          color = [ 0.25, 0.25, 0.25, 1.0 ]
+        }
+      },
+      {
+        inventory_grid = {
+          type = "grid",
+          size = [162, 54],
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          offset = [0, -22],
+          grid_dimensions = [9, 3],
+          grid_item_template = "kmjava_container.inventory_grid_item"
+        }
+      },
+      {
+        hotbar_grid = {
+          type = "grid",
+          size = [162, 18],
+          anchor_from = "bottom_left",
+          anchor_to = "bottom_left",
+          grid_dimensions = [9, 1],
+          grid_item_template = "kmjava_container.hotbar_grid_item"
         }
       }
     ]

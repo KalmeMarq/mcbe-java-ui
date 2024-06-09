@@ -3,77 +3,81 @@
 {
   namespace = "kmjava_title",
 
-#if MCPE_CURRENT >= MCPE_0_14
-  language_icon = {
-    type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/language.png",
-    size = [15, 15],
-    uv_size = [15, 15],
-    uv = [0, 0],
-    layer = 4
-  },
-
-#if MCPE_CURRENT >= MCPE_0_15
-  skins_icon = {
-    type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/accessibility.png",
-    size = [15, 15],
-    uv_size = [15, 15],
-    uv = [0, 0],
-    layer = 4
-  },
-#endif
-
   copyright_text = {
     type = "label",
-    size = [0, 10],
-    alignment = "top_right",
-    layer = 2,
+    #if MCPE_CURRENT >= MCPE_0_16
+      size = ["default", 10],
+    #else
+      size = [0, 10],
+      #if MCPE_CURRENT < MCPE_0_13
+        alignment = "right",
+      #else
+        alignment = "top_right",
+      #endif
+    #endif
+    LAYER_PROP(2),
+    shadow = true,
     offset = [-3, 0],
     text = "menu.copyright",
     anchor_from = "bottom_right",
     anchor_to = "bottom_right"
   },
 
-  version_text = {
+   version_text = {
     type = "label",
-    size = [50, 10],
-    offset = [54, 1],
-    anchor_from = "bottom_left",
-    anchor_to = "bottom_left",
-    alignment = "top_left",
-    layer = 2,
+    #if MCPE_CURRENT >= MCPE_0_16
+      size = [50, 10],
+    #else
+      size = ["default", 10],
+    #endif
+    #if MCPE_CURRENT < MCPE_0_13
+      alignment = "right",
+      offset = [38, 0],
+    #elif MCPE_CURRENT < MCPE_0_16
+      #if MCPE_CURRENT >= MCPE_0_14
+        offset = [54, 1],
+      #else
+        offset = [54, 0],
+      #endif
+      #if MCPE_CURRENT < MCPE_0_16
+        alignment = "top_left",
+      #endif
+    #endif
+    LAYER_PROP(2),
     text = "#version",
     shadow = true,
-    bindings = [
-      { binding_name = "#version" }
-    ]
-  },
-
-  version = {
-    type = "panel",
     anchor_from = "bottom_left",
     anchor_to = "bottom_left",
-    size = ["100%", 10],
-    offset = [1, 0],
-    controls = [
-      {
-        minecraft = {
-          type = "label",
-          text = "Minecraft",
-          size = [50, 10],
-          anchor_from = "bottom_left",
-          anchor_to = "bottom_left",
-          shadow = true
+    bindings = [
+      { binding_name = "#version" },
+      #if MCPE_CURRENT >= MCPE_1_17
+        {
+          binding_type =  "view",
+          source_property_name =  "('§r' + #version - 'v')",
+          target_property_name =  "#version"
         }
-      },
-      { version_text@kmjava_title.version_text = {} }
+      #elif MCPE_CURRENT >= MCPE_0_16
+        {
+          binding_type =  "view",
+          source_property_name =  "(#version - 'v')",
+          target_property_name =  "#version"
+        }
+      #endif
     ]
+  },
+  
+  language_icon = {
+    type = "image",
+    texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/language"),
+    size = [15, 15],
+    uv_size = [15, 15],
+    uv = [0, 0],
+    LAYER_PROP(4)
   },
 
   title = {
     type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/minecraft.png",
+    texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/minecraft"),
     anchor_from = "top_middle",
     anchor_to = "top_middle",
     size = [256, 44],
@@ -84,7 +88,7 @@
       {
         edition = {
           type = "image",
-          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/edition.png",
+          texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/edition"),
           anchor_from = "bottom_middle",
           anchor_to = "bottom_middle",
           size = [128, 14],
@@ -97,12 +101,58 @@
         splash_text = {
           type = "custom",
           renderer = "splash_text_renderer",
-          size = [32, 32],
+          #if MCPE_CURRENT >= MCPE_1_0
+            size = [14, 14],
+          #else
+            size = [32, 32],
+          #endif
           anchor_from = "bottom_right",
           anchor_to = "bottom_right",
-          layer = 4
+          LAYER_PROP(4)
         }
       }
+    ]
+  },
+
+#if MCPE_CURRENT >= MCPE_0_14
+  #if MCPE_CURRENT >= MCPE_0_15
+    skins_icon = {
+      type = "image",
+      texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/accessibility"),
+      size = [15, 15],
+      uv_size = [15, 15],
+      uv = [0, 0],
+      layer = 4
+    },
+  #endif
+
+  version = {
+    #if MCPE_CURRENT >= MCPE_0_16
+      type = "stack_panel",
+      orientation = "horizontal",
+    #else
+      type = "panel",
+    #endif
+    anchor_from = "bottom_left",
+    anchor_to = "bottom_left",
+    size = ["100%", 10],
+    offset = [1, 0],
+    controls = [
+      {
+        minecraft = {
+          type = "label",
+          text = "Minecraft ",
+          #if MCPE_CURRENT >= MCPE_0_16
+            size = ["default", 10],
+          #else
+            size = [50, 10],
+            anchor_from = "bottom_left",
+            anchor_to = "bottom_left",
+          #endif
+          shadow = true
+        }
+      },
+      { version_text@kmjava_title.version_text = {} }
     ]
   },
 
@@ -116,31 +166,31 @@
     $pressed_button_name = "button.menu_achievements"
   },
 
-#if MCPE_CURRENT >= MCPE_0_15
-  store_button@kmjava_button.button = {
-    $pressed_button_name = "button.menu_store",
-    $button_text = "menu.store"
-  },
-#endif
+  #if MCPE_CURRENT >= MCPE_0_15
+    store_button@kmjava_button.button = {
+      $pressed_button_name = "button.menu_store",
+      $button_text = "menu.store"
+    },
+  #endif
 
   skins_button@kmjava_button.button = {
-#if MCPE_CURRENT >= MCPE_0_15
-    size = [20, 20],
-    $button_content = "kmjava_title.skins_icon",
-#else
-    $button_text = "menu.skins",
-#endif
+    #if MCPE_CURRENT >= MCPE_0_15
+      size = [20, 20],
+      $button_content = "kmjava_title.skins_icon",
+    #else
+      $button_text = "menu.skins",
+    #endif
     $pressed_button_name = "button.menu_skins"
   },
 
   settings_button@kmjava_button.button = {
     size = [98, 20],
     $button_text = "menu.options",
-#if MCPE_CURRENT > MCPE_0_14
-    $pressed_button_name = "button.menu_settings"
-#else
-    $pressed_button_name = "button.menu_options"
-#endif
+    #if MCPE_CURRENT > MCPE_0_14
+      $pressed_button_name = "button.menu_settings"
+    #else
+      $pressed_button_name = "button.menu_options"
+    #endif
   },
 
   quit_button@kmjava_button.button = {
@@ -149,33 +199,128 @@
     $pressed_button_name = "button.menu_exit"
   },
 
-  language_button@kmjava_button.button = {
-    size = [20, 20],
-    $button_content = "kmjava_title.language_icon",
-    $pressed_button_name = "button.menu_language"
-  },
+  #if MCPE_CURRENT < MCPE_0_16
+    language_button@kmjava_button.button = {
+      size = [20, 20],
+      $button_content = "kmjava_title.language_icon",
+      $pressed_button_name = "button.menu_language"
+    },
+  #else
+    feedback_button@kmjava_button.button = {
+      size = [20, 20],
+      $button_content = "kmjava_title.language_icon",
+      $pressed_button_name = "button.menu_open_uri",
+      property_bag = {
+        #hyperlink = "http://aka.ms/minecraftfb"
+      },
+      bindings = [
+        {
+          binding_name = "#feedback_visible",
+          binding_name_override = "#visible"
+        }
+      ]
+    },
+  #endif
 
   buttons_panel = {
     type = "panel",
     controls = [
       { play_button@kmjava_title.play_button = { offset = ["50% - 100px", "25% + 48px"] } },
       { achievements_button@kmjava_title.achievements_button = { offset = ["50% - 100px", "25% + 48px + 24px"] } },
-#if MCPE_CURRENT >= MCPE_0_15
-      { store_button@kmjava_title.store_button = { offset = ["50% - 100px", "25% + 48px + 48px"] } },
-      { skins_button@kmjava_title.skins_button = { offset = ["50% + 100px + 2px", "25% + 48px + 72px + 12px"] } },
-#else
-      { skins_button@kmjava_title.skins_button = { offset = ["50% - 100px", "25% + 48px + 48px"] } },
-#endif
-      { language_button@kmjava_title.language_button = { offset = ["50% - 100px - 24px", "25% + 48px + 72px + 12px"] } },
+      #if MCPE_CURRENT >= MCPE_0_15
+        { store_button@kmjava_title.store_button = { offset = ["50% - 100px", "25% + 48px + 48px"] } },
+        { skins_button@kmjava_title.skins_button = { offset = ["50% + 100px + 2px", "25% + 48px + 72px + 12px"] } },
+      #else
+        { skins_button@kmjava_title.skins_button = { offset = ["50% - 100px", "25% + 48px + 48px"] } },
+      #endif
+      #if MCPE_CURRENT < MCPE_0_16
+        { language_button@kmjava_title.language_button = { offset = ["50% - 100px - 24px", "25% + 48px + 72px + 12px"] } },
+      #else
+        { feedback_button@kmjava_title.feedback_button = { offset = ["50% - 100px - 24px", "25% + 48px + 72px + 12px"] } },
+      #endif
       { settings_button@kmjava_title.settings_button = { offset = ["50% - 100px", "25% + 48px + 72px + 12px"] } },
       { quit_button@kmjava_title.quit_button = { offset = ["50% + 2px", "25% + 48px + 72px + 12px"] } }
     ]
   },
 
+  #if MCPE_CURRENT >= MCPE_0_16 && defined(SHOW_PAPER_DOLL)
+    skin_paper_doll = {
+      type = "input_panel",
+      size = [ "50% - 100px", 90],
+      offset = [0, 0],
+      anchor_from = "right_middle",
+      anchor_to = "right_middle",
+      gesture_tracking_button = "button.turn_doll",
+      layer = 1,
+      button_mappings = [
+        {
+          from_button_id = "button.menu_select",
+          to_button_id = "button.turn_doll",
+          mapping_type = "pressed",
+          button_up_right_of_first_refusal = true
+        }
+      ],
+      controls = [
+        {
+          renderer = {
+            type = "custom",
+            renderer = "paper_doll_renderer",
+            size = [ "100%", "100% - 10px"],
+            rotation = "gesture_x",
+            layer = 2,
+            bindings = [
+            #if MCPE_CURRENT >= MCPE_1_2
+              {
+                binding_type = "view",
+                source_control_name = "skin_paper_doll",
+                source_property_name = "#gesture_delta_source",
+                target_property_name = "#gesture_delta_source"
+              },
+              {
+                binding_type = "view",
+                source_control_name = "skin_paper_doll",
+                source_property_name = "#gesture_mouse_delta_x",
+                target_property_name = "#gesture_mouse_delta_x"
+              }
+            #else
+              {
+                binding_type = "view",
+                source_control_name = "skin_paper_doll",
+                source_property_name = "#gesture_mouse_delta_x",
+                target_property_name = "#gesture_mouse_delta_x"
+              }
+            #endif
+            ]
+          }
+        }
+      ]
+    },
+  #endif
+
   screen_content = {
     type = "panel",
     controls = [
       { title@kmjava_title.title = {} },
+      #if SHOW_PLAYER_NAME
+        {
+          player_name = {
+            type = "label",
+            text = "#playername",
+            anchor_from = "bottom_left",
+            anchor_to = "bottom_left",
+            size = ["default", 10],
+            offset = [1, -10],
+            shadow = true,
+            LAYER_PROP(2),
+            bindings = [
+              { binding_name = "#playername" }
+            ]
+          }
+        },
+      #endif
+      #if MCPE_CURRENT >= MCPE_0_16 && defined(SHOW_PAPER_DOLL)
+        { skin_paper_doll@kmjava_title.skin_paper_doll = {} },
+      #endif
       { copyright_text@kmjava_title.copyright_text = {} },
       { version@kmjava_title.version = {} },
       { buttons_panel@kmjava_title.buttons_panel = {} }
@@ -183,52 +328,6 @@
   }
 
 #else
-
-  copyright_text = {
-    type = "label",
-    size = [0, 10],
-#if MCPE_CURRENT < MCPE_0_13
-    alignment = "right",
-    z_order = 2,
-#else
-    alignment = "top_right",
-    layer = 2,
-#endif
-    offset = [-3, 0],
-    text = "menu.copyright",
-    anchor_from = "bottom_right",
-    anchor_to = "bottom_right"
-  },
-
-  version_text = {
-    type = "label",
-    size = [ 50, 10 ],
-#if MCPE_CURRENT < MCPE_0_13
-    alignment = "right",
-    offset = [38, 0],
-#else
-    offset = [54, 0],
-    alignment = "top_left",
-#endif
-    LAYER_PROP(2),
-    text = "#version",
-    shadow = true,
-    anchor_from = "bottom_left",
-    anchor_to = "bottom_left",
-    bindings = [
-      { binding_name = "#version" }
-    ]
-  },
-
-  language_icon = {
-    type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/icon/language.png",
-    size = [15, 15],
-    uv_size = [15, 15],
-    uv = [0, 0],
-    LAYER_PROP(4)
-  },
-
   feedback_icon = {
     type = "image",
     texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/toast/social_interactions.png",
@@ -236,45 +335,6 @@
     uv_size = [20, 20],
     uv = [0, 0],
     LAYER_PROP(4)
-  },
-
-  title = {
-    type = "image",
-    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/minecraft.png",
-    anchor_from = "top_middle",
-    anchor_to = "top_middle",
-    size = [256, 44],
-    offset = [0, 30],
-    uv_size = [1024, 176],
-    uv = [0, 0],
-    controls = [
-      {
-        edition = {
-          type = "image",
-          texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/title/edition.png",
-          anchor_from = "bottom_middle",
-          anchor_to = "bottom_middle",
-          size = [128, 14],
-          offset = [0, 7],
-          uv_size = [512, 56],
-          uv = [0, 0]
-        }
-      },
-      {
-        splash_text = {
-          type = "custom",
-          renderer = "splash_text_renderer",
-          size = [32, 32],
-          anchor_from = "bottom_right",
-          anchor_to = "bottom_right",
-#if MCPE_CURRENT < MCPE_0_13
-          z_order = 4
-#else
-          layer = 4
-#endif
-        }
-      }
-    ]
   },
 
   version = {
@@ -344,15 +404,15 @@
     anchor_to = "top_middle",
     offset = [0, "25% + 48px"],
     controls = [
-#save BUTTON_LIST
+    #save BUTTON_LIST
       { play_button@kmjava_title.play_button = { offset = [0, 0] } },
-      { achievements_button@kmjava_title.achievements_button = { offset = [0, 24] } },
+      { achievements_button@kmjava_title.achievements_button = { offset = [0, "24px"] } },
       { skins_button@kmjava_title.skins_button = { offset = [0, 48] } },
       { language_button@kmjava_title.language_button = { offset = [-114, 90] } },
       { feedback_button@kmjava_title.feedback_button = { offset = [114, 90] } },
       { settings_button@kmjava_title.settings_button = { offset = [-51, 90] } },
       { quit_button@kmjava_title.quit_button = { offset = [51, 90] } },
-#endsave
+    #endsave
     ]
   },
 
@@ -376,35 +436,35 @@
   screen_content = {
     type = "panel",
     controls = [
-#save SCREEN_CONTENT
+    #save SCREEN_CONTENT
       {
         menu_background = {
           type = "custom",
           renderer = "menu_background_renderer"
         }
       },
-#if SHOW_PLAYER_NAME
-      {
-        player_name = {
-          type = "label",
-          text = "#playername",
-          anchor_from = "bottom_left",
-          anchor_to = "bottom_left",
-          alignment = "left",
-          size = [48, 1],
-          offset = [2, -20],
-          shadow = true,
-          LAYER_PROP(2),
-          bindings = [
-            { binding_name = "#playername" }
-          ]
-        }
-      },
-#endif
+      #if SHOW_PLAYER_NAME
+        {
+          player_name = {
+            type = "label",
+            text = "#playername",
+            anchor_from = "bottom_left",
+            anchor_to = "bottom_left",
+            alignment = "left",
+            size = [48, 1],
+            offset = [2, -20],
+            shadow = true,
+            LAYER_PROP(2),
+            bindings = [
+              { binding_name = "#playername" }
+            ]
+          }
+        },
+      #endif
       { version@kmjava_title.version = {} },
       { copyright@kmjava_title.copyright_text = {} },
       { title@kmjava_title.title = {} },
-#endsave
+    #endsave
       { buttons@kmjava_title.buttons_panel = {} }
     ]
   },
@@ -412,7 +472,7 @@
   trial_screen_content = {
     type = "panel",
     controls = [
-#paste SCREEN_CONTENT
+      #paste SCREEN_CONTENT
       { buttons@kmjava_title.trial_buttons_panel = {} }
     ]
   }

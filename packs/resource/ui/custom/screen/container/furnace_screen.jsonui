@@ -267,10 +267,16 @@
     type = "panel",
     controls = [
       { bg@kmjava_container.screen_background = {} },
+      #if defined(TOUCH) && !defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+        { close@kmjava_container.container_close_panel = { size = ["50% - 88px", "40%"] } },
+      #endif
       {
         root@common.root_panel = {
           controls = [
             { bg@kmjava_furnace.container_bg = {} },
+            #if defined(TOUCH) && defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+              { close@kmjava_container.container_close_panel = {} },
+            #endif
             { title@kmjava_furnace.container_title = {} },
 #if MCPE_CURRENT < MCPE_0_14
             {

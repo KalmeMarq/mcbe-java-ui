@@ -183,11 +183,17 @@
     type = "panel",
     controls = [
       { bg@kmjava_container.screen_background = {} },
+      #if defined(TOUCH) && !defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+        { close@kmjava_container.container_close_panel = { size = ["50% - 88px", "40%"] } },
+      #endif
       {
         root@common.root_panel = {
           size = [176, 222],
           controls = [
             { bg@kmjava_chest.large_chest_container_bg = {} },
+            #if defined(TOUCH) && defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+              { close@kmjava_container.container_close_panel = {} },
+            #endif
             { title@kmjava_chest.container_title = {} },
             { grid@kmjava_chest.large_chest_grid = {} },
             { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },

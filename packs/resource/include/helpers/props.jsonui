@@ -3,3 +3,11 @@
 #else
   #define LAYER_PROP(value) layer = ##value##
 #endif
+
+// In 1.1 they made it so it's no longer required to put the image extension. In fact, if you do, it can't find it.
+// Probably, It's always appending '.png'.
+#if MCPE_CURRENT < MCPE_1_1
+  #define TXR_PATH(path) ##path + ".png"##
+#else
+  #define TXR_PATH(path) ##path##
+#endif

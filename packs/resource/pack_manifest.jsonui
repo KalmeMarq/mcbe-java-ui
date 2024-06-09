@@ -11,12 +11,21 @@
 
 {
 #if MCPE_CURRENT >= MCPE_1_1
-  format_version = 1,
+  #if MCPE_CURRENT >= MCPE_1_16
+    format_version = 2,
+  #else
+    format_version = 1,
+  #endif
   header = {
     uuid = PACK_UUID,
     name = PACK_NAME,
     version = [PACK_VERSION_MAJOR, PACK_VERSION_MINOR, 0],
-    description = PACK_DESC
+    description = PACK_DESC,
+    #if MCPE_CURRENT >= MCPE_1_16
+      min_engine_version = [1, 14, 0]
+    #elif MCPE_CURRENT >= MCPE_1_4
+      min_engine_version = [1, 2, 6]
+    #endif
   },
   modules = [
     {
@@ -27,8 +36,8 @@
     }
   ],
   metadata = {
-    authors = "KalmeMarq",
-    url = ""
+    authors = ["KalmeMarq"],
+    url = "https://github.com/KalmeMarq"
   }
 #else
   header = {
