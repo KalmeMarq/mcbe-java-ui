@@ -3,6 +3,7 @@
 .env
 
 packs/resource/textures/custom/*/**
+packs/resource/textures/default/gui/background/*
 out
 build
 test.ts
