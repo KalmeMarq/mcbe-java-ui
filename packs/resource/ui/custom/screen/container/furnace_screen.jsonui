@@ -320,7 +320,10 @@
 #endif
           ]
         }
-      }
+      },
+      #if MCPE_CURRENT >= MCPE_0_14
+        { selected_item@kmjava_container.inventory_selected_icon_button = {} }
+      #endif
     ]
   }
 }

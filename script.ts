@@ -339,7 +339,7 @@ export class Preprocessor {
   private _parentContext?: DefineContext;
   private _context: DefineContext;
   private _excluding = false;
-  private _ifs: boolean[] = [];
+  private _ifs: [boolean, boolean][] = [];
 
   private _saves: Map<string, string[]> = new Map();
   private _currentSave: string | null = null;
@@ -357,7 +357,7 @@ export class Preprocessor {
   }
 
   private canProcess(): boolean {
-    return !this._excluding && this._ifs.every((it) => it);
+    return !this._excluding && this._ifs.every((it) => it[0] === true && it[1] === true);
   }
 
   public getContext() {
@@ -473,16 +473,28 @@ export class Preprocessor {
           this._context.add(createDefine(match['define'], this.processLine(resultBody.join('\n'))));
         }
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IF)) != null) {
-        this._ifs.push(Boolean(this.evaluate(match['expression'])) == true);
+        const v = Boolean(this.evaluate(match['expression'])) == true;
+        this._ifs.push([v, v]);
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IFDEF)) != null) {
-        this._ifs.push(this._context.has(match['define']));
+        const v = this._context.has(match['define']);
+        this._ifs.push([v, v]);
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.IFNDEF)) != null) {
-        this._ifs.push(!this._context.has(match['define']));
+        const v = !this._context.has(match['define']);
+        this._ifs.push([v, v]);
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ELIF)) != null) {
-        if (!this._ifs[this._ifs.length - 1]) this._ifs[this._ifs.length - 1] = Boolean(this.evaluate(match['expression'])) == true;
-        else this._ifs[this._ifs.length - 1] = false;
+        const a0 = this._ifs[this._ifs.length - 1][0];
+        const a1 = this._ifs[this._ifs.length - 1][1];
+        const v = Boolean(this.evaluate(match['expression'])) == true;
+
+        if (a0 && a1) {
+          this._ifs[this._ifs.length - 1] = [false, true];
+        } else if (!a0 && !a1) {
+          this._ifs[this._ifs.length - 1] = [v, v];
+        } else if (!a0 && a1) {
+          this._ifs[this._ifs.length - 1] = [false, true];
+        }
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ELSE)) != null) {
-        this._ifs[this._ifs.length - 1] = !this._ifs[this._ifs.length - 1];
+        this._ifs[this._ifs.length - 1] = [!this._ifs[this._ifs.length - 1][1], !this._ifs[this._ifs.length - 1][1]];
       } else if ((match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.ENDIF)) != null) {
         this._ifs.pop();
       } else if (this.canProcess() && (match = this.matchDirective(trimmedLine, DIRECTIVES_REGEX.UNDEF)) != null) {
@@ -574,9 +586,18 @@ if (import.meta.main) {
 
   const config = toml.parse(Deno.readTextFileSync('config.toml')) as unknown as PackConfig;
 
+  if (Deno.args.includes('-v')) {
+    const v = Deno.args[Deno.args.indexOf('-v') + 1];
+    if (isMCPEVersion(v)) {
+      config.target_version = v;
+    }
+  }
+
   function ensureFromEnv(value: string) {
     return value.startsWith('env:') ? env[value.substring('env:'.length)] : value;
   }
+
+  console.log('Target version:', ensureFromEnv(config.target_version));
 
   if (env['FLAGS']) {
     config.flags = [...env['FLAGS'].split(',').map((it) => it.trim()), ...(config.flags ?? [])];
@@ -606,6 +627,11 @@ if (import.meta.main) {
     return [false, undefined];
   });
   context.add(createDefine('MCPE_CURRENT', getMCPEVersionNumerically(ensureFromEnv(config.target_version))));
+
+  const customTexturesToInclude = (() => {
+    const pp = new Preprocessor(context);
+    return JSONC.parse(pp.process(Deno.readTextFileSync('packs/resource/textures/custom_textures.jsonui'))[1]!);
+  })();
 
   if (getMCPEVersionNumerically(ensureFromEnv(config.target_version)) < getMCPEVersionNumerically('MCPE_0_16')) {
     runLegacyProfile(profile);
@@ -652,7 +678,7 @@ if (import.meta.main) {
         ensureDirSync(dirname(outfilepath));
         copySync(file.path, outfilepath, { overwrite: true });
       }
-      paths.push(relative(dst, outfilepath));
+      paths.push(relative(dst, outfilepath).replaceAll('\\', '/'));
     }
     return paths;
   }
@@ -793,11 +819,25 @@ if (import.meta.main) {
         Deno.removeSync(resolve(outpath, 'ui/out'), { recursive: true });
       }
 
+      if (existsSync(resolve(outpath, 'images/out'))) {
+        Deno.removeSync(resolve(outpath, 'images/out'), { recursive: true });
+      }
+
       copySync(resolve(mcdatapath, 'ui_backup'), resolve(mcdatapath, 'ui'), { overwrite: true });
     }
 
     if (existsSync('packs/resource/textures/custom')) {
-      copyDirP(profile, 'packs/resource/textures/custom', resolve(outpath, 'images/out'), true, (path) => path.endsWith('.png'));
+      copyDirP(profile, 'packs/resource/textures/custom', resolve(outpath, 'images/out'), true, (path) => {
+        if (!customTexturesToInclude.includes(relative('packs/resource/textures/custom', path).replaceAll('\\', '/'))) {
+          return false;
+        }
+        return path.endsWith('.png');
+      });
+    }
+
+    copySync(resolve(mcdatapath, 'images_backup/gui'), resolve(mcdatapath, 'images/gui'), { overwrite: true });
+    if (existsSync('packs/resource/textures/default')) {
+      copyDirP(profile, 'packs/resource/textures/default', resolve(outpath, 'images'), true, (path) => path.endsWith('.png'));
     }
 
     if (existsSync('packs/resource/ui/custom')) {

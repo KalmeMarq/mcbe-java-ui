@@ -25,7 +25,7 @@
 
    version_text = {
     type = "label",
-    #if MCPE_CURRENT >= MCPE_0_16
+    #if MCPE_CURRENT < MCPE_0_16
       size = [50, 10],
     #else
       size = ["default", 10],
@@ -35,9 +35,9 @@
       offset = [38, 0],
     #elif MCPE_CURRENT < MCPE_0_16
       #if MCPE_CURRENT >= MCPE_0_14
-        offset = [54, 1],
+        offset = [52, 1],
       #else
-        offset = [54, 0],
+        offset = [52, 0],
       #endif
       #if MCPE_CURRENT < MCPE_0_16
         alignment = "top_left",
@@ -145,7 +145,7 @@
           #if MCPE_CURRENT >= MCPE_0_16
             size = ["default", 10],
           #else
-            size = [50, 10],
+            size = [48, 10],
             anchor_from = "bottom_left",
             anchor_to = "bottom_left",
           #endif
@@ -216,7 +216,11 @@
       bindings = [
         {
           binding_name = "#feedback_visible",
-          binding_name_override = "#visible"
+          #if MCPE_CURRENT < MCPE_0_16
+            binding_name_override = "#visible"
+          #else
+            binding_name_override = "#enabled"
+          #endif
         }
       ]
     },
@@ -269,27 +273,20 @@
             rotation = "gesture_x",
             layer = 2,
             bindings = [
-            #if MCPE_CURRENT >= MCPE_1_2
-              {
-                binding_type = "view",
-                source_control_name = "skin_paper_doll",
-                source_property_name = "#gesture_delta_source",
-                target_property_name = "#gesture_delta_source"
-              },
-              {
-                binding_type = "view",
-                source_control_name = "skin_paper_doll",
-                source_property_name = "#gesture_mouse_delta_x",
-                target_property_name = "#gesture_mouse_delta_x"
-              }
-            #else
+              #if MCPE_CURRENT >= MCPE_1_2
+                {
+                  binding_type = "view",
+                  source_control_name = "skin_paper_doll",
+                  source_property_name = "#gesture_delta_source",
+                  target_property_name = "#gesture_delta_source"
+                },
+              #endif
               {
                 binding_type = "view",
                 source_control_name = "skin_paper_doll",
                 source_property_name = "#gesture_mouse_delta_x",
                 target_property_name = "#gesture_mouse_delta_x"
               }
-            #endif
             ]
           }
         }
@@ -308,7 +305,11 @@
             text = "#playername",
             anchor_from = "bottom_left",
             anchor_to = "bottom_left",
-            size = ["default", 10],
+            #if MCPE_CURRENT >= MCPE_0_16
+              size = ["default", 10],
+            #else
+              size = [50, 10],
+            #endif
             offset = [1, -10],
             shadow = true,
             LAYER_PROP(2),
@@ -348,7 +349,7 @@
         minecraft = {
           type = "label",
           text = "Minecraft",
-          size = [50, 10],
+          size = [48, 10],
           anchor_from = "bottom_left",
           anchor_to = "bottom_left",
           shadow = true

@@ -3,14 +3,92 @@
   namespace = "chest",
 
   small_chest_screen@common.inventory_screen_common = {
-    controls = [
-      { screen_content@kmjava_chest.chest_content_screen = {} }
-    ]
+    #if MCPE_CURRENT >= MCPE_1_2
+      variables = [
+        {
+          requires = "$desktop_screen",
+          $screen_content = "kmjava_chest.chest_content_screen",
+          $screen_bg_content = "kmjava_container.screen_background"
+        },
+        {
+          requires = "$pocket_screen",
+          $screen_content = "pocket_containers.small_chest_panel"
+        }
+      ],
+    #elif MCPE_CURRENT >= MCPE_0_16
+      $screen_content = "kmjava_chest.chest_content_screen"
+    #else
+      controls = [
+        { screen_content@kmjava_chest.chest_content_screen = {} }
+      ]
+    #endif
   },
 
   large_chest_screen@common.inventory_screen_common = {
-    controls = [
-      { screen_content@kmjava_chest.large_chest_content_screen = {} }
-    ]
-  }
+    #if MCPE_CURRENT >= MCPE_1_2
+      variables = [
+        {
+          requires = "$desktop_screen",
+          $screen_content = "kmjava_chest.chest_content_screen",
+          $screen_bg_content = "kmjava_container.screen_background"
+        },
+        {
+          requires = "$pocket_screen",
+          $screen_content = "pocket_containers.large_panel"
+        }
+      ],
+    #elif MCPE_CURRENT >= MCPE_0_16
+      $screen_content = "kmjava_chest.large_chest_content_screen"
+    #else
+      controls = [
+        { screen_content@kmjava_chest.large_chest_content_screen = {} }
+      ]
+    #endif
+  },
+
+  #if MCPE_CURRENT >= MCPE_1_2
+    ender_chest_screen@common.inventory_screen_common = {
+      #if MCPE_CURRENT >= MCPE_1_2
+        variables = [
+          {
+            requires = "$desktop_screen",
+            $screen_content = "kmjava_chest.chest_content_screen",
+            $screen_bg_content = "kmjava_container.screen_background"
+          },
+          {
+            requires = "$pocket_screen",
+            $screen_content = "pocket_containers.ender_chest_panel"
+          }
+        ],
+      #elif MCPE_CURRENT >= MCPE_0_16
+        $screen_content = "kmjava_chest.chest_content_screen"
+      #else
+        controls = [
+          { screen_content@kmjava_chest.chest_content_screen = {} }
+        ]
+      #endif
+    },
+
+    shulker_box_screen@small_chest_screen = {
+      #if MCPE_CURRENT >= MCPE_1_2
+        variables = [
+          {
+            requires = "$desktop_screen",
+            $screen_content = "kmjava_chest.chest_content_screen",
+            $screen_bg_content = "kmjava_container.screen_background"
+          },
+          {
+            requires = "$pocket_screen",
+            $screen_content = "pocket_containers.shulker_box_panel"
+          }
+        ],
+      #elif MCPE_CURRENT >= MCPE_0_16
+        $screen_content = "kmjava_chest.chest_content_screen"
+      #else
+        controls = [
+          { screen_content@kmjava_chest.chest_content_screen = {} }
+        ]
+      #endif
+    },
+  #endif
 }

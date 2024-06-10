@@ -1,0 +1,202 @@
+#ignore MCPE_CURRENT < MCPE_0_14
+#include "helpers/props"
+{
+  namespace = "kmjava_brewing_stand",
+
+  brewing_stand_container_bg = {
+    type = "image",
+    #if MCPE_CURRENT < MCPE_1_2
+      texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/container/legacy_brewing_stand"),
+    #else
+      texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/container/brewing_stand"),
+    #endif
+    uv = [0, 0],
+    uv_size = [176, 166],
+    size = [176, 166]
+  },
+  
+  bubbles = {
+    type = "image",
+    texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/container/brewing_stand/bubbles"),
+    layer = 3,
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    #if MCPE_CURRENT < MCPE_0_16
+      offset = [65, 14],
+    #else
+      offset = [63, 14],
+    #endif
+    size = [12, 29],
+    uv = [0, 0],
+    uv_size = [12, 29],
+    clip_direction = "down",
+    bindings = [
+      {
+        binding_name = "#brewing_bubbles_ratio",
+        binding_name_override = "#clip_ratio",
+        binding_condition = "visible"
+      }
+    ]
+  },
+
+  brew_progress = {
+    type = "image",
+    layer = 3,
+    texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/container/brewing_stand/brew_progress"),
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    offset = [97, 16],
+    size = [9, 28],
+    uv = [0, 0],
+    uv_size = [9, 28],
+    clip_direction = "up",
+    bindings = [
+      {
+        binding_name = "#brewing_arrow_ratio",
+        binding_name_override = "#clip_ratio",
+        binding_condition = "visible"
+      }
+    ]
+  },
+
+  #if MCPE_CURRENT >= MCPE_1_2
+    fuel_length = {
+      type = "image",
+      layer = 3,
+      texture = TXR_PATH("CUSTOM_TEXTURES_PATH/minecraft/textures/gui/sprites/container/brewing_stand/fuel_length"),
+      anchor_from = "top_left",
+      anchor_to = "top_left",
+      offset = [ -23, 3 ],
+      size = [18, 4],
+      clip_direction = "left",
+      bindings = [
+        {
+          binding_name = "#brewing_fuel_ratio",
+          binding_name_override = "#clip_ratio",
+          binding_condition = "always"
+        }
+      ]
+    },
+  #endif
+
+  container_title@kmjava_container.container_label = {
+    #if MCPE_CURRENT < MCPE_0_16
+      offset = [0, 8],
+      alignment = "center",
+    #else
+      offset = [0, 6],
+    #endif
+    anchor_from = "top_middle",
+    anchor_to = "top_middle",
+    #if MCPE_CURRENT == MCPE_0_14
+      text = "item.brewingStand.name"
+    #else
+      text = "item.brewing_stand.name"
+    #endif
+  },
+
+  output_grid_item@kmjava_container.container_slot_grid_item = {
+    size = [18, 18],
+    $item_collection_name = "brewing_result_items"
+  },
+
+  output_slot = {
+    type = "grid",
+    anchor_from = "top_left",
+    anchor_to = "top_left",
+    size = [1, 1],
+    collection_name = "brewing_result_items"
+  },
+
+  input_grid_item@kmjava_container.container_slot_grid_item = {
+    offset = [78, 16],
+    size = [18, 18],
+    $item_collection_name = "brewing_input_item"
+  },
+
+  #if MCPE_CURRENT >= MCPE_1_2
+    fuel_slot@kmjava_container.container_slot = {
+      offset = [16, 16],
+      $item_collection_name = "brewing_fuel_item"
+    },
+  #endif
+
+  brewing_stand_screen_content = {
+    type = "panel",
+    controls = [
+      #if MCPE_CURRENT < MCPE_1_2
+        { bg@kmjava_container.screen_background = {} },
+      #endif
+      #if defined(TOUCH) && !defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+        { close@kmjava_container.container_close_panel = { size = ["50% - 88px", "40%"] } },
+      #endif
+      {
+        root@common.root_panel = {
+          controls = [
+            { bg@kmjava_brewing_stand.brewing_stand_container_bg = {} },
+            #if defined(TOUCH) && defined(USE_CLOSE_BUTTON_FOR_TOUCH)
+              { close@kmjava_container.container_close_panel = {} },
+            #endif
+            { title@kmjava_brewing_stand.container_title = {} },
+            { bubbles@kmjava_brewing_stand.bubbles = {} },
+            { brew_progress@kmjava_brewing_stand.brew_progress = {} },
+            #if MCPE_CURRENT >= MCPE_1_2
+              { fuel_length@kmjava_brewing_stand.fuel_length = {} },
+            #endif
+            { input@kmjava_brewing_stand.input_grid_item = {} },
+            {
+              output1@kmjava_brewing_stand.output_slot = {
+                offset = [55, 45],
+                controls = [
+                  { output_grid_item@kmjava_brewing_stand.output_grid_item = { grid_position = [0, 0] } }
+                ]
+              }
+            },
+            {
+              output2@kmjava_brewing_stand.output_slot = {
+                offset = [78, 52],
+                controls = [
+                  #if MCPE_CURRENT < MCPE_0_16
+                    { output_grid_item@kmjava_brewing_stand.output_grid_item = { grid_position = [1, 0], offset = [-1, 0] } }
+                  #else
+                    {
+                      item = {
+                        type = "panel",
+                        grid_position = [1, 0],
+                        controls = [
+                          { output_grid_item@kmjava_brewing_stand.output_grid_item = { offset = [-1, 0] } }
+                        ]
+                      }
+                    }
+                  #endif
+                ]
+              }
+            },
+            {
+              output3@kmjava_brewing_stand.output_slot = {
+                offset = [101, 45],
+                controls = [
+                  #if MCPE_CURRENT < MCPE_0_16
+                    { output_grid_item@kmjava_brewing_stand.output_grid_item = { grid_position = [2, 0], offset = [-2, 0] } }
+                  #else
+                    {
+                      item = {
+                        type = "panel",
+                        grid_position = [2, 0],
+                        controls = [
+                          { output_grid_item@kmjava_brewing_stand.output_grid_item = { offset = [-2, 0] } }
+                        ]
+                      }
+                    }
+                  #endif
+                ]
+              }
+            },
+            { inventory@kmjava_container.inventory_hotbar_panel_with_label = {} },
+          ]
+        }
+      },
+      { selected_item@kmjava_container.inventory_selected_icon_button = {} }
+    ]
+  }
+}

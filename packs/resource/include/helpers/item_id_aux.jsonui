@@ -1,0 +1,4 @@
+#define STONE_ID 1
+
+// Credits: lukaspah
+#define GET_ITEM_ID_AUX_OF_BLOCK(mc_id, blockstate_data, enchanted) ##(true && mc_id > 255 ? 255 - mc_id : mc_id) << 16 | 0 +  ((blockstate_data*1) + ((enchanted ? 32768 : 0)*1))##

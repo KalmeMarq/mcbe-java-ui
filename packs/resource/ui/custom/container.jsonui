@@ -6,17 +6,19 @@
     type = "image",
     texture = TXR_PATH("CUSTOM_TEXTURES_PATH/screen_background"),
     LAYER_PROP(-10),
-    alpha = 0.75,
     uv = [0, 0],
+    nineslice_size =  1.0,
     uv_size = [1, 2]
   },
 
   container_label = {
     type = "label",
-    size = [1, 1],
+    #if MCPE_CURRENT < MCPE_0_16
+      size = [1, 1],
+      alignment = "top_left",
+    #endif
     anchor_from = "top_left",
     anchor_to = "top_left",
-    alignment = "top_left",
     color = [0.25, 0.25, 0.25, 1.0],
     LAYER_PROP(2)
   },
@@ -161,12 +163,17 @@
     ]
   },
 
+  empty_panel = {
+    type = "panel"
+  },
+
   container_slot = {
     type = "panel",
     anchor_from = "top_left",
     anchor_to = "top_left",
     size = [18, 18],
     layer = 1,
+    $background_overlay_ref|default = "kmjava_container.empty_panel",
     $button_ref|default = "kmjava_container.container_slot_button_prototype",
     $stack_count_visible|default = true,
     controls = [
@@ -188,12 +195,15 @@
           ]
         }
       },
+      { background@$background_overlay_ref = {} },
       { item_button_ref@$button_ref = {} }
     ]
   },
 
   container_slot_grid_item@kmjava_container.container_slot = {
-    type = "grid_item"
+    #if MCPE_CURRENT < MCPE_0_15
+      type = "grid_item"
+    #endif
   },
 
   inventory_slot_grid_item@kmjava_container.container_slot_grid_item = {
@@ -231,7 +241,11 @@
         inventory_label@common.section_heading_label = {
           anchor_from = "bottom_left",
           anchor_to = "bottom_left",
-          offset =  [0, -85],
+          #if MCPE_CURRENT < MCPE_0_16
+            offset =  [0, -85],
+          #else
+            offset =  [0, -77],
+          #endif
           text = "container.inventory"
         }
       },
@@ -248,6 +262,79 @@
           anchor_to = "bottom_left"
         }
       }
+    ]
+  },
+
+  inventory_selected_icon@common.item_renderer = {
+    layer = 100,
+    size = [18, 18],
+    bindings = [
+      {
+        binding_name = "#inventory_selected_item",
+        binding_name_override = "#item_id_aux",
+        binding_condition = "visible"
+      },
+      {
+        binding_name = "#inventory_selected_item_color",
+        binding_name_override = "#item_custom_color",
+        binding_condition = "visible"
+      }
+    ]
+  },
+  
+  inventory_selected_stack_size_text = {
+    type = "label",
+    layer = 103,
+    shadow = true,
+    alignment = "bottom_right",
+    text = "#inventory_selected_item_stack_count",
+    bindings = [
+      {
+        binding_name = "#inventory_selected_item_stack_count",
+        binding_condition = "visible"
+      }
+    ]
+  },
+  
+  inventory_icon_panel = {
+    type = "panel",
+    controls = [
+      { selected_item_icon@kmjava_container.inventory_selected_icon = { } },
+      { selected_stack_size_text@kmjava_container.inventory_selected_stack_size_text = { } },
+      {
+        hover_text@common.hover_text = {
+          ignored = "$not_touch",
+          layer = 99,
+          bindings = [
+            {
+              binding_name = "#hover_text",
+              binding_condition = "visible"
+            }
+          ]
+        }
+      }
+    ]
+  },
+
+  inventory_selected_icon_button = {
+    type = "button",
+    anchor_from = "center",
+    anchor_to = "center",
+    default_control = "default",
+    hover_control = "hover",
+    pressed_control = "pressed",
+    layer = -10,
+    size = [18, 18],
+    follows_cursor = true,
+    sound_name = "random.click",
+    sound_volume = 1.0,
+    sound_pitch = 1.0,
+    always_handle_pointer = true,
+    controls = [
+      { default@kmjava_container.inventory_icon_panel = { } },
+      { pressed@kmjava_container.inventory_icon_panel = { } },
+      { hover@kmjava_container.inventory_icon_panel = { } },
+      { durability@common.durability_bar_grabbed = { } }
     ]
   },
 

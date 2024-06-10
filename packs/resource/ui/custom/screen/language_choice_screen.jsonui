@@ -12,6 +12,14 @@
     uv_size = [16, 16]
   },
 
+  list_background = {
+    type = "image",
+    texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/menu_list_background.png",
+    LAYER_PROP(-5),
+    uv = [0, 0],
+    uv_size = [16, 16]
+  },
+
   header_separator = {
     type = "image",
     texture = "CUSTOM_TEXTURES_PATH/minecraft/textures/gui/header_separator.png",
@@ -232,9 +240,12 @@
     offset = [0, 32],
     clips_children = true,
     controls = [
+      { bg@kmjava_language_choice.list_background = {} },
 #if MCPE_CURRENT >= MCPE_0_14
       {
         scrolling@common.scrolling_panel = {
+          offset = [0, -4],
+          size = ["100%", "100% + 2px"],
           $scrolling_pane_size = [ "100%", "100%" ],
           $scrolling_content = "kmjava_language_choice.language_list_grid",
           $scroll_pane_name = "scroller",

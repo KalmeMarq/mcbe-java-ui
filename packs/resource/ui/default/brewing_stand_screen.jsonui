@@ -1,0 +1,28 @@
+#ignore MCPE_CURRENT < MCPE_0_14
+{
+  namespace = "brewing_stand",
+
+  brewing_stand_screen@common.inventory_screen_common = {
+    #if MCPE_CURRENT >= MCPE_1_2
+      variables = [
+        {
+          requires = "$desktop_screen",
+          $screen_content = "kmjava_brewing_stand.brewing_stand_screen_content",
+          $screen_bg_content = "kmjava_container.screen_background",
+          $gamepad_cursor = true
+        },
+        {
+          requires = "$pocket_screen",
+          $screen_content = "brewing_stand_pocket.brewing_stand_panel",
+          $gamepad_cursor = false
+        }
+      ]
+    #elif MCPE_CURRENT >= MCPE_0_16
+      $screen_content = "kmjava_brewing_stand.brewing_stand_screen_content"
+    #else
+      controls = [
+        { screen_content@kmjava_brewing_stand.brewing_stand_screen_content = {} }
+      ]
+    #endif
+  }
+}
